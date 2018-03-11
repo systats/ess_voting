@@ -1,0 +1,286 @@
+---
+title: "ESS Data Wrangling"
+subtitle: "Testing differnt causal paths..."
+author: "Rebecca & Simon "
+output: html_notebook
+---
+
+## Packages
+
+```{r}
+pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes)
+```
+
+## Data
+
+Select Variables from ESS round 8 and the cummulative round 1-7 for missing country data ([ESS Long Format](http://www.europeansocialsurvey.org/downloadwizard/)). The countries are augumented from: 
+
+* `Round 6`: Ukraine, Slovakia, Hugary, Cyprus, Bulgaria, Albania
+* `Round 5`: Turkey, Kosovo, Italy, Greece, Croatia
+* `Round 7`: Spain, Protugal, Lithuania, Denmark
+
+```{r, warning=F, message=F, error=F, results="hide"}
+get_party <- function(x){
+  dat1 <- x %>% 
+    select(contains("prtv"), prtvede1, prtvede2) %>%
+    mutate_all(sjmisc::to_label) %>% 
+    mutate_all(as.character) %>%
+    mutate(vote = apply(., 1, function(x) paste(ifelse(is.na(x), "", x), collapse = ""))) %>%
+    mutate(vote = vote %>%
+           stringr::str_replace_all("SPD", " SPD ") %>%
+           stringr::str_replace_all("CDU/CSU", " CDU/CSU ") %>%
+           stringr::str_replace_all("FDP", " FDP ") %>%
+           stringr::str_replace_all("NPD", " NPD ") %>%
+           stringr::str_replace_all("Die Linke", " DieLinke ") %>%
+           stringr::str_replace_all("AfD", " AfD ") %>%
+           stringr::str_replace_all("Andere Partei", " AnderePartei ") %>%
+           stringr::str_replace_all("Piratenpartei", " Piratenpartei ") %>%
+           stringr::str_replace_all("Bündnis.*?Grünen", " Bündnis90/DieGrünen ") %>%
+           stringr::str_replace_all("^Grünen", " Bündnis90/DieGrünen ") %>%
+           stringr::str_replace_all("\\s+", " ") %>%
+           stringr::str_trim() %>%
+           stringr::str_replace_all("^.*? ", "")
+         )
+  
+  vote_id <- x %>%
+    select(contains("prtv"), prtvede1, prtvede2) %>%
+    #mutate_all(sjmisc::to_label) %>% 
+    mutate_all(as.character) %>%
+    split(1:nrow(x)) %>%
+    map_chr(~ paste(ifelse(is.na(.x), "", .x), collapse = ""))
+
+  x %>%
+    mutate(vote = dat1$vote, vote_id = vote_id)
+}
+
+ess <- read_sav("data/original/ESS8e01.sav") %>%
+  mutate(cname = sjmisc::to_label(cntry)) %>%
+  get_party()
+
+ess_add <- read_sav("data/original/ESS1-7e01.sav") %>%
+  filter(! cntry == "RU" & !cntry == 6) %>%
+  mutate(cname = sjmisc::to_label(cntry)) %>%
+  get_party()
+# unique(ess$cntry) %in% unique(ess_add$cntry)
+
+ess_all <- bind_rows(ess, ess_add)
+dim(ess_all)
+
+step1 <- ess_all %>%
+    select(idno, cntry, cname, essround, hinctnta, polintr, lrscale,
+         rlgatnd, pbldmn, ctzcntr, rlgatnd, edulvlb, eduyrs, yrbrn, gndr,
+         dplyr::starts_with("trst"),
+         dplyr::starts_with("stf"),
+         #dplyr::starts_with("im"),
+         imbgeco, imsmetn, imdfetn, impcntr,
+         #dplyr::starts_with("prtvt")
+         vote, vote_id
+    )
+
+table(step1$vote_id)
+```
+
+
+```{r}
+step2 <- step1 %>%
+    mutate(country = countrycode::countrycode(cname, "country.name", "country.name")) %>%
+    mutate(iso2 = countrycode::countrycode(country, "country.name", "iso2c")) %>%
+    mutate(iso3 = countrycode::countrycode(cname, "country.name", "iso3c")) %>%
+    select(-cntry, -cname)
+colnames(step2)
+```
+
+
+```{r}
+step3 <- step2 %>%
+    rename(
+      id = idno, 
+      round = essround, 
+      income = hinctnta,
+      pol_inter = polintr,
+      gndr = gndr,
+      year = yrbrn,
+      edu_year = eduyrs,
+      edu = edulvlb,
+      rel = rlgatnd,
+      demo = pbldmn,
+      citz = ctzcntr,
+      trust_parl = trstprl, 
+      trust_pol = trstplt,
+      trust_party = trstprt,
+      trust_leg = trstlgl,
+      trust_police = trstplc,
+      trust_eu = trstep,
+      s_life = stflife,
+      s_econ = stfeco,
+      s_gov = stfgov,
+      s_dem = stfdem,
+      imm_econ = imbgeco,
+      imm_same = imsmetn,
+      imm_diff = imdfetn,
+      imm_poor = impcntr
+    )
+
+### Not included so far
+# news_pol = nwspol
+# inet = netusoft
+# poli_intr = polintr
+# have_say = psppsgva
+# pol_grp = actrolga
+# have_infl = psppipla
+# in_eff = cptppola
+# party_act = wrkprty
+# sign_pet = sgnptit
+# state_edu = stfedu
+# sate_health = stfhlth
+# eu_state = euftf
+# social_lazy = sblazy
+# region = regio
+
+glimpse(step3)
+```
+
+```{r}
+### Germany special 
+step3$vote_id[step3$country == "Germany"] <- step3 %>%
+  filter(country == "Germany") %>%
+  mutate(vote_id = stringr::str_extract(vote_id, "\\d$")) %>%
+  .$vote_id
+```
+
+Filter problematic countries
+
+```{r}
+step4 <- step3 %>%
+  filter(!(country %in% c("Romania", "Malta", "Luxembourg", "Latvia", "Lithuania")))%>%
+  mutate(vote_id = ifelse(vote_id == "", "", paste(iso2, vote_id, sep = "_")))
+```
+
+
+```{r}
+ess_parties <- step4 %>%
+  filter(vote != "") %>%
+  group_by(country, iso2, vote, vote_id) %>%
+  tally %>%
+  #mutate(n = NULL) %>%
+  filter(!vote == "Other") %>%
+  arrange(country, vote_id) %>%
+  mutate(vote_id = paste(iso2, vote_id, sep = "_"))
+
+
+library(openxlsx)
+#openxlsx::write.xlsx(ess_parties, file = "data/ess_parties_new.xlsx")
+# save(ess_parties, file = "shiny_match/ess_parties.Rdata")
+# write.csv2(ess_parties, "data/ess_parties.csv")
+matching_data <- openxlsx::read.xlsx("data/original/ess_parties_new.xlsx") %>%
+  select(party_id, vote_id) %>%
+  na.omit
+```
+
+## Match party data 
+
+mapping ches data to ess
+
+```{r}
+glimpse(step4)
+
+ess_final <- step4 %>%
+  left_join(matching_data, by = "vote_id")
+
+# save(ess_final, file = "data/Rdata/ess_final.Rdata")
+
+ess_final %>%
+  filter(vote != "") %>%
+  count(is.na(party_id))
+```
+
+
+# CHES
+
+## PDF to dataframe
+
+```{r}
+# pacman::p_load(pdftables)
+# 
+# pdftable_api <- "opj9i5owyg40"
+# pdftables::convert_pdf("data/2014_CHES_codebook.pdf",
+#                         "data/party_tables.csv",
+#                         api_key = pdftable_api)
+# 
+# pdftables::convert_pdf("codebooks/country_names.pdf",
+#                         "codebooks/country_names.csv",
+#                         api_key = pdftable_api)
+# 
+```
+
+## Import and ESS matching
+
+```{r}
+
+clist <- list(
+  BE = "Belgium",
+  DK  = "Denmark",
+  GE  = "Germany",
+  GR  = "Greece",
+  ESP = "Spain",
+  FR  = "France",
+  IRL = "Ireland",
+  IT  = "Italy",
+  NL = "Netherlands",
+  UK = "United Kingdom",
+  POR=  "Portugal",
+  AUS=  "Austria",
+  FIN=  "Finland",
+  SV = "Sweden",
+  BUL=  "Bulgaria",
+  CZ = "Czech Republic",
+  EST=  "Estonia",
+  HUN=  "Hungary",
+  LAT=  "Latvia",
+  LITH = "Lithuania",
+  POL=  "Poland",
+  ROM=  "Romania",
+  SLO=  "Slovakia",
+  SLE=  "Slovenia",
+  CRO=  "Croatia",
+  TUR=  "Turkey",
+  NOR=  "Norway",
+  SWI=  "Switzerland",
+  MAL=  "Malta",
+  LUX=  "Luxembourg",
+  CYP=  "Cyprus"
+)
+
+library(haven)
+ches <- read_dta("data/original/2014_CHES_dataset_means-2.dta") %>%
+  mutate(country = tidyTX::tx_map_dict(country, dict = clist, key1 = 0, key2 = 1)) %>%
+  mutate(party_id = as.integer(party_id))
+
+ches_final <- ches %>%
+  left_join(matching_data, by = "party_id")
+
+# save(ches_final, file = "data/Rdata/ches_final.Rdata")
+
+# dt <- read_csv("data/party_tables.csv") %>%
+#   mutate(country = tidyTX::tx_map_dict(country, dict = clist, key1 = 0, key2 = 1)) %>%
+#   mutate(party_id = as.integer(party_id))
+
+# ches_data <- ches %>%
+#   select(-country, -party_name) %>%
+#   mutate(party_id = as.integer(party_id)) %>%
+#   left_join(dt, by = c("party_id")) %>%
+#   mutate(country = countrycode::countrycode(country, "country.name", "country.name"))
+
+# ches_parties <- ches_data %>% 
+#   select(country, party_id, party_short, party_name_en) %>%
+#   mutate(vote_id = NA) %>%
+#   arrange(country)
+# 
+# table(ches_data$country)
+# #ches_party <- nn %>%
+# # save(ches_parties, file = "shiny_match/ches_parties.Rdata")
+# #write.csv2(ches_parties, "data/ches_parties.csv")
+# library(openxlsx)
+# #openxlsx::write.xlsx(ches_parties, file = "data/ches_parties.xlsx")
+# #readr::write_csv(ches_parties, path = "data/ches_parties.csv")
+```
