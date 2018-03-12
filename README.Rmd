@@ -13,6 +13,7 @@ Hi, this is Becci's and Simon`s working page for writing the last semester paper
 
 ## ToDo
 
+* Why not using diff of leftright and party left-right
 * Why not use interaction variable of vote_right and protest as y?
 * Is there a reasonable party_id/ voting_id coverage?
 * Derive final research question

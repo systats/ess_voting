@@ -1,0 +1,86 @@
+---
+output:
+  pdf_document:
+    includes:
+      before_body: title_page.tex
+    fig_caption: yes
+    number_sections: yes
+bibliography: literature.bib
+csl: american-journal-of-political-science.csl
+urlcolor: black
+linkcolor: black
+fontsize: 12pt
+geometry: margin = 1.2in
+header-includes:
+- \usepackage[ngerman, english]{babel} 
+- \usepackage{fancyhdr}
+- \usepackage{color}
+- \usepackage{xcolor}
+- \usepackage[utf8]{inputenc}
+- \usepackage{amsmath}
+- \usepackage{amsfonts}
+- \usepackage{amssymb}
+- \usepackage{graphicx}
+- \usepackage{float}
+- \usepackage{verbatim}
+- \usepackage{subcaption}
+- \usepackage{caption}
+- \captionsetup{labelfont=bf}
+- \usepackage{listings}
+- \usepackage{url}
+- \usepackage{apacite}
+- \usepackage{setspace}
+- \usepackage{microtype}
+- \usepackage{booktabs}
+#- \usepackage{lmodern}
+- \usepackage{url}
+# - \onehalfspacing
+# - \usepackage[top=2.5cm, bottom=2cm, left=2.5cm, right=4cm]{geometry}
+#- \usepackage{placeins}
+#- \usepackage{chngcntr}
+#- \counterwithin{figure}{section}
+#- \counterwithin{table}{section}
+- \usepackage{mathptmx}
+- \usepackage[scaled=0.9]{helvet}
+- \usepackage{courier}
+- \usepackage[T1]{fontenc}
+---
+
+```{r setup, include=FALSE}
+### Knitr settings
+knitr::opts_chunk$set(echo = F,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      error = F, 
+                      fig.height = 3.5, 
+                      fig.width = 5, 
+                      fig.align = "center")
+```
+
+\newpage
+\pagestyle{fancy}
+
+\fancyhead[LE,RO]{}
+\fancyhead[LO,RE]{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\spacing{1.5}
+
+
+```{r child = '1_part.Rmd'}
+```
+
+```{r child = '2_part.Rmd'}
+```
+
+
+\newpage
+
+# References {-}
+\fancyhead[CO,CE]{References}
+
+
+
+

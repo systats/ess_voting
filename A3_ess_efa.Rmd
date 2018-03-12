@@ -14,28 +14,120 @@ pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labe
 ## Data
 
 ```{r}
-ess <- get(load("data/Rdata/ess_final.Rdata"))
+ess <- get(load("data/Rdata/ess_final.Rdata")) %>%
+  group_by(country) %>%
+  mutate(id = paste0(iso2, 1:n()))
 ```
 
 
 ## Trust 
 
+First we explore the diemnionality of the given trust items by applying standard pairwise scatterplots for euch variable combination and principal component analysis (efa) gain information on the distribution of variance in the data. After that conformatory factor analysis scores are computed for one trust dimesnion and merged for later analysis.
+
+
 ```{r}
-fa_data <- ess %>%
-  select(contains("trust")) %>%
+trust_data_id <- ess %>%
+  select(id, contains("trust")) %>%
   na.omit() 
 
-fa_res <- fa_data %>%
-  factanal(.,factors = 1, scores = 'regression')
-fa_res$scores[,1]
+trust_data <- trust_data_id %>% select(-id)
+```
+
+### Exploratory Analysis
+
+```{r}
+library(GGally)
+
+trust_scatter <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_jitter(alpha = .01, color = "#3D3D3D") + 
+    geom_smooth(method = "lm") +
+    geom_smooth(method = "smooth", color = "red")
+}
+
+trust_hist <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_bar(fill = "#3D3D3D", alpha = .9, color = "#3D3D3D")
+}
+
+pm <- ggpairs(
+  trust_data, 
+  #columns = c("total_bill", "time", "tip"),
+  diag = list(continuous = wrap(trust_hist)),
+  lower = list(
+    #combo = wrap("facethist", binwidth = 1),
+    continuous = wrap(trust_scatter)
+  )
+) + ggthemes::theme_gdocs()
+
+pm
+#ggsave(pm, filename = "ggpairs_trust.png", width = 10, height = 10)
+#ggpairs(fa_data, types = list(continuous = wrap(my_bin, binwidth = c(5, 0.5), high = "red")))
+```
+
+![](ggpairs_trust.png)
+
+
+## PCA 
+
+```{r}
+fit_pca1 <- trust_data %>%
+  scale() %>%
+  prcomp()
+```
+
+```{r}
+### Screeplot: Eigenvalues
+fviz_eig(fit_pca1, addlabels = T, ylim = c(0, 80))
+
+fviz_pca_var(fit_pca1, col.var = "black")
+
+# Color by cos2 values: quality on the factor map
+fviz_pca_var(
+  fit_pca1, 
+  col.var = "cos2",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+  repel = TRUE # Avoid text overlapping
+)
+# Graph of individuals
+# fviz_pca_ind(fit_pca1)
+
+# Total cos2 of variables on Dim.1 and Dim.2
+fviz_cos2(fit_pca1, choice = "var", axes = 1:2)
+
+# Contributions of variables to PC1
+fviz_contrib(fit_pca1, choice = "var", axes = 1, top = 10)
+# Contributions of variables to PC2
+fviz_contrib(fit_pca1, choice = "var", axes = 2, top = 10)
+# The total contribution to PC1 and PC2 is obtained with
+fviz_contrib(fit_pca1, choice = "var", axes = 1:3, top = 10)
 ```
 
 
 
 ## Factor Analysis
 
+```{r}
+fa_trust <- trust_data %>%
+  factanal(., factors = 1, scores = 'regression')
+
+trust_data_id$trust_scores <- fa_trust$scores[,1]
+trust_data_id$trust_scores %>% head
+```
+
+
+```{r}
+dd <- trust_data_id %>% select(id, trust_scores)
+ess_score <- ess %>%
+  dplyr::left_join(dd)
+
+#save(ess_score, file = "data/Rdata/ess_score.Rdata")
+```
+
+
+
+
 * maximum likelihood estimation
-* Datamatrix: X (nxp)
 * Assumptions: Each row $x_i$ of X is an independent sample from a
 multivariate normal distribution, which has the density function:
 
@@ -49,14 +141,6 @@ Need to first: write out the likelihood, and then maximize it!!!
 *Easier* to start with a one-factor solution...
 
 $$\Sigma = \lambda\lambda^T + D_\psi$$
-
-```{r efa, echo = T}
-imm_efa <- imm_dat1 %>%
-  factanal(.,factors = 2, scores = 'regression')
-
-autoplot(imm_efa, data = imm_dat1, alpha = .1, loadings = T) + viridis::scale_colour_viridis(discrete = T)
-```
-
 
 * The proportion of the variance in each original variable $x_d$ accounted for by the first $PC_1$ given by the sum of the squared factor loadings; that is $\sum^c_{k=1} f^2_{ik}$. When c=p (all components are retained). $$\sum^c_{k=1} f^2_{ik}=1$ (all variance is explained)
 
@@ -109,4 +193,16 @@ $$\Xi = X_SB$$
 These factor scores are included in the data and can be used instead of the original variables. 
 
 
+
+
+```{r, eval = F}
+library(ggplot2)
+library(survival)
+data(lung, package = "survival")
+summary(ess$rel)
+ess_surv <- ess
+ess_surv$year <- 2017 - ess_surv$year 
+sf.ess <- survival::survfit(Surv(year, gndr) ~ 1, data = ess_surv)
+ggsurv(sf.ess)
+```
 

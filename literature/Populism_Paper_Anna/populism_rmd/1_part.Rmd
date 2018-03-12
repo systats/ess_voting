@@ -1,0 +1,84 @@
+---
+output: pdf_document
+---
+
+# Introduction
+
+
+“And coming to Europe, the new populism of the far right becomes fundamentally urban and exclusionary” [@taggart2000populism 6]. Never has the European Union been confronted with so many various nationalist and populist streams. Front National in France, AfD in Germany, Jobbik in Hungary, PiS in Poland, Party of Freedom with Geert Wilders and in Italy the Lega Nord. European wide, a front against liberal european freedom of movement, against modern values and social achievements since World War II has developed itself. It seems like populists have taken over parliaments all over Europe to spread their anger about everything that is different and new from a traditional society from the last century, like gender roles, inclusionary society etc. Populism has experienced a peak during the last 8 years as we could all experience. This started approximately after the big EU-Crisis and developed in various countries, mostly central and northern European ones. 
+But until now, scholars have been articulating diverse hypotheses about the sources of these successes. Some authors specify on the political dimensions of Populism, some focus on the electorate, others on the economical background.
+
+Therefore this research paper will find answers to following question: \textbf{\textit{which values lead to voting Right Wing Populist parties in Europe, especially focusing on France and Poland?}}
+To better understand the diverse populist streams in Europe, we need to focus on the different origins of populism in France and Poland. These countries have always had very different backgrounds: France as a founding member has always been the heart of a strong European-Union. Poland who came into the EU just in 2004, also with a communist background, has always had it's problems to integrate in the EU because the Europeanization might have gone to fast. @buzalka2008europeanisation underlines that since "the enlargement of European Union in 2004 new member countries have been developing patterns of reactionary politics" and gone in the direction of post-peasant populism. 
+
+First of all, three dimensions of right-wing populism will be developed and described in this paper. These will be underlined with various literature from predominant scholars. With the help of these theoretical dimensions the following section will then formulate six hypotheses. Then the hypotheses are tested on the basis of the selected data sample. The underlying research method is a logistic regression. Subsequently, a logistic regression analysis, Odds Ratio and Marginal Effects are used to determine whether the hypotheses can be confirmed. The conclusion will be based on the results of the work and will provide a recommendation for further discussion of this issue. 
+
+
+# The Dimensions of Right-Wing Populism
+
+France and Poland have different political backgrounds as seen during the introduction. For this reason this paper will find and test hypotheses that describe the different interests of the polish and french electorate the most. For this to succeed, 3 categories have been compiled to structure the various dimensions of populism. The first category is defined as \textbf{Descriptive Dimension}, the second category is defined as \textbf{Political Values} and the third category will focus on \textbf{Social Interests and Social Values}. In this following section, those three dimensions will be developed with the help of existing knowledge from various scholars.
+
+
+## Socio-economic Status 
+To ensure a better understanding of electorates decision and background to vote for a right-wing populist party, we need to use disaggregated data for our analysis. In a case study concerning the electorates values in Germany during the 90s, Falter was searching for differences in descriptive variables: \textbf{gender} and \textbf{age}. The outcome was showing a difference in voting for right-wing populist parties for men and women and different ages: Women vote less for populist parties and the right-wing populist parties appeal mostly to youth and older people as @falter1999vote found out. 
+
+Another important aspect in various literature on populism is \textbf{education}. As @mudde2017populism argue voters fall for populist parties more often, if they feel that they are not part of current society. This perception is because the voters are “objectively or subjectively [...] being excluded from power due to their sociocultural and socioeconomic status.” [@mudde2017populism 10]. In this citation Mudde and Kaltwasser do not only focus on education but also on income. Because it can be expected that those variables would correlate in an joint model, we will focus on Education for this analysis. Additionally Lucardie highlights the necessity of education in an analysis about populism: "lower classes without diploma hold on to traditions, their mother tongue and the local culture" [@lucardie2011populismus 27]. This means that less educated people tend to be more traditional. In dimension 3 (Social Interest and Social Values) we will see that traditional values lead to voting for right-wing populist parties.
+
+
+## Political Values 
+
+"Most populists not only detest the political establishment, but they also critique the economic elite, the cultural elite, and the media elite. All of those are portrayed as one homogeneous corrupt group that works against the 'general will' of the people." [@mudde2017populism 11]. As we can see in this argument from Mudde and Kaltwasser, populism tends to build an inner group which is working against the corrupt others. Populists do not only argument that they \textbf{detest the elite} (= homogeneous corrupt group) but also the political system of representative politics itself [@taggart2000populism]. 
+As Mudde and Kaltwasser elaborate furthermore, "This anti-elitist impetus goes together with a critique of institutions such as political parties, big organizations, and bureaucracies, which are accused of distorting the 'truthful' links between populist leaders and 'the common people'" [@mudde2017populism 11]. It is emphasized that voters of populist parties do \textbf{not trust the political system} they live in, neither are they \textbf{satisfied with representative democracy} in their country. Populism may be broadly defined as "a general protest against the checks and balances introduced to prevent ‘the people’s’ direct rule" [@pelinka2013right 3].
+ 
+Summarizing, we can observe the great accordance of scholars, that populist electorate is not supporting the political system and wants to rebel against the established structures. 
+
+
+## Social Interests and Social Values
+
+Populists need out-groups (mostly immigrants) who serve as the reason of all bad. @lucardie2011populismus argues that populist parties have an interest of blaming immigrants and mobilizing the electorate against them. These \textbf{xenophobic values} are approved from previous research done on voting electorate: "the electorate of the Front National appear much more xenophobic than the average voters" [@brechon1992national 68].
+
+This comparative case study focuses on France and Poland, therefore some examples from these two countries should also be considered. Marine Le Pen, the french candidate for the Front-National "placed under suspicion all the asylum-seekers trying to reach Europe by sea but also anyone with a \textbf{Muslim background}” during her election campaign in 2014 [@mondon2014front 309].
+As Jean-Marie Le Pen (the leader of the FN until 2011) was openly Anti-Semitic and Facist who “called the Holocaust “a detail” of history and replacing it with France first economic nationalism" [@cohen2017] it would be interesting for this research to evaluate if the electorate of the FN is still \textbf{Anti-Semitic}. @williams2011new argues that Marine Le Pen seems to be re-positioning the Front-National and develop it to a new brand, therefore this research should evaluate the Anti-Semitic values of a Front-National voter.
+
+Another aspect that was highlighted in literature about populism in Poland was the importance of \textbf{tradition} and \textbf{religion} for the populist electorate. Agrarian populism plays a key role in polish politics: "Memories of the peasant past are transmitted across generations, from peasant grandparents to their grandchildren, some of them university educated. This type of memory is observable in everyday life, in people's worldviews as expressed in narratives that nourish a kind of peasant nostalgia" [@buzalka2008europeanisation 761]. According to @buzalka2008europeanisation, a social anthropologist at the University of Bratislava, the peasant and religious world still has power to influence political positions through traditions, which leads therefore to a driving force of populism . 
+
+Religion can be seen as the best predictor of voting behavior: “The more religious people were, the more likely they were to display euro-skeptical attitudes" [@jasiewicz2004knocking 40].
+@buzalka2008europeanisation is also supporting this theory by stating that populism legitimates itself through an alliance with the church who is supporting populists because for their care of traditions and fear to lose it. 
+
+# Developing Hypotheses
+
+From the above outlined theory of the three described dimensions of right-wing populism, several hypotheses can be deduced. These will be tested in the following analysis. 
+
+\textbf{H1:} \textit{Women vote less for right-wing populist parties.}
+
+\textbf{H2:} \textit{If a person belongs to the youth or is older, there is higher probability that the person will vote for a right-wing populist party.}
+
+
+\textbf{H3:} \textit{The less educated a person is, the higher the probability that he/she votes for a right-wing-populist party.}
+
+\textbf{H4:} \textit{The more unsatisfied a person is with the democratic system and or the less a person can trust the legal system, the higher the probability that he/she votes for a right-wing-populist party.} 
+
+\textbf{H5:} \textit{If a person is Xenophobic, in this case either Islamophobic or  Anti-Semitic, the higher the probability that he/she votes for a right-wing populist party.}
+
+
+\textbf{H6:} \textit{ If a person shares high traditional or religious values, the probability for that person to vote for a right-wing populist party is higher.}
+
+
+
+<!-- # Richitiges Zitieren! -->
+
+<!-- Hier ist mein erstes Zitat im Text von @taggart2000populism. Und einfach nur als indirekte Zitation [@taggart2000populism 2]. -->
+
+<!-- ## Some Citations\label{label1} -->
+
+<!-- This is an example introduction. Let's cite someone here [@Author2016]. And in text as well: @Author2013 says that we can cite people in text. Or we can write the name, and than use the citation thingy to print the year: Blabla states something about something [-@Blabla2010]. Or how about multiple citations [@Author2016; @Author2013]. Or we citation with a little of text around it [for example see @Blabla2010: 92-93]. -->
+
+<!-- ALLE Zitierweisen von Zotero gibts [HIER](https://www.zotero.org/styles). -->
+
+<!-- Hier ist mein erstes Zitat im Text von @taggart2000populism. Und einfach nur als indirekte Zitation [@taggart2000populism 2]. -->
+
+
+<!-- ## Formalia -->
+
+
+<!-- ## Some Thoughts  -->

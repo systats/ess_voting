@@ -21,15 +21,15 @@ ches <- get(load("data/Rdata/ches_final.Rdata"))
 ## Indeces 
 
 ```{r}
-range01 <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
+normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
 ches <- ches %>% 
   mutate(populism = antielite_salience + corrupt_salience) %>% 
-  mutate(populism2 = range01(range01(antielite_salience) + 
-                               (1 - range01(eu_position)))*100) %>% #+ 
+  mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
+                               (1 - normalize_range(eu_position)))*100) %>% #+ 
                            #    (1 - range01(eu_budgets)))*100) %>% 
   mutate(liberalism = sociallifestyle + civlib_laworder + galtan) %>% 
-  mutate(populism = range01(populism)*100) %>% 
-  mutate(liberalism = range01(liberalism)*100) #%>% 
+  mutate(populism = normalize_range(populism)*100) %>% 
+  mutate(liberalism = normalize_range(liberalism)*100) #%>% 
   #filter(year > 2009)
 ```
 
@@ -84,6 +84,17 @@ k3 <- kmeans(ches_cluster, centers = 3, nstart = 25, iter.max = 10)
 ggf <- fviz_cluster(k3, data = ches_cluster, show.clust.cent = T, text = "vote_id")
 ggf + theme_gdocs()
 ```
+
+```{r}
+ches_cluster_data$k3 <- k3$cluster
+
+ches_clust <- ches %>%
+  left_join(ches_cluster_data)
+
+# save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
+```
+
+
 
 
 ```{r}

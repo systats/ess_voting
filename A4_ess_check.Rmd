@@ -1,0 +1,130 @@
+---
+title: "ESS Variable Check"
+subtitle: "Factor Scores"
+author: "Rebecca & Simon "
+output: html_notebook
+---
+
+## Packages
+
+```{r}
+pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, cluster, factoextra, fpc)
+```
+
+## Data
+
+```{r}
+options(scipen = 999)
+ess <- get(load("data/Rdata/ess_final.Rdata"))
+
+ess_prep <- ess 
+
+ess_prep <- ess_prep %>%
+  mutate(
+    id = 1:n(),
+    round_year = case_when(
+      round == 8 ~ "2016",
+      round == 7 ~ "2014",
+      round == 6 ~ "2012",
+      round == 5 ~ "2010",
+      round == 4 ~ "2008",
+      round == 3 ~ "2006",
+      round == 2 ~ "2004",
+      round == 1 ~ "2002",
+      TRUE ~ "") %>% 
+      as.numeric
+    )
+
+nrow(ess_prep)
+colnames(ess_prep)
+```
+
+## Missing Data
+
+```{r}
+library(visdat)
+
+typical_data <- ess_prep %>%
+  filter(country == "France")
+
+
+ggv1 <- vis_dat(typical_data)
+ggv1
+
+vis_dat(typical_data, 
+        sort_type = FALSE)
+
+
+ggm1 <- vis_miss(typical_data)
+ggm1
+```
+
+```{r}
+typical_data <- ess_prep %>%
+  filter(country == jj) %>%
+  vis_miss()
+
+cnames <- unique(ess_prep$country)
+for(jj in seq_along(cnames)){
+  gg_mis <- ess_prep %>%
+    filter(country == cnames[jj]) %>%
+    vis_miss() + ggtitle(cnames[jj])
+  ggsave(gg_mis, filename = paste0("visuals/mis_", cnames[jj], ".png"))
+}
+
+
+gg_list <- ess_prep %>%
+  group_by(country, round, round_year) %>%
+  nest() %>%
+  arrange(country) %>%
+  map(~vis_miss(.x))
+  #split(.$country) %>%
+
+glimpse(gg_list)
+```
+
+
+### ID
+
+```{r}
+hist(ess_prep$id)
+```
+
+### Round
+
+* R1 = 02
+* R2 = 04	
+* R3 = 06
+* R4 = 08
+* R5 = 10
+* R6 = 12
+* R7 = 14
+* R8 = 16
+
+```{r}
+ess_prep %>% 
+  select(round, round_year) %>%
+  gather("var", "value")  %>%
+  ggplot(aes(value)) +
+  geom_bar() +
+  facet_wrap(~var, scales = "free")
+```
+
+## Income 
+
+```{r}
+ess_prep %>% 
+  ggplot(aes(income)) +
+  geom_bar()
+
+summary(ess_prep$income)
+```
+
+## pol_inter
+
+```{r}
+ess_prep %>% 
+  ggplot(aes(pol_inter)) +
+  geom_bar()
+```
+
