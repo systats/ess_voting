@@ -128,3 +128,21 @@ ess_prep %>%
   geom_bar()
 ```
 
+
+## Get Info
+
+* horse shoe theory
+* Set up Rmarkdown paper template
+* Set up Project page
+
+
+```{r, eval = F}
+p5 <- step5 %>%
+  select(gndr, edu, income, rel, year) %>%
+  gather("var", "value") %>%
+  ggplot(aes(value, fill = var)) +
+  geom_bar() +
+  facet_wrap(~var, scales = "free") +
+  viridis::scale_fill_viridis(discrete = T)
+p5
+```

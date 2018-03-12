@@ -1,26 +1,25 @@
----
-title: "CHES Clustering"
-subtitle: "KNN + Treebased clustering methods"
-author: "Rebecca & Simon "
-output: github_document
----
+CHES Clustering
+================
+Rebecca & Simon
 
-## Packages
+Packages
+--------
 
-```{r}
+``` r
 pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, cluster, factoextra, fpc)
 ```
 
-## Data
+Data
+----
 
-```{r}
+``` r
 ches <- get(load("data/Rdata/ches_final.Rdata"))
 ```
 
+Indeces
+-------
 
-## Indeces 
-
-```{r}
+``` r
 normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
 ches <- ches %>% 
   mutate(populism = antielite_salience + corrupt_salience) %>% 
@@ -33,9 +32,10 @@ ches <- ches %>%
   #filter(year > 2009)
 ```
 
-# Horse-shoe
+Horse-shoe
+==========
 
-```{r}
+``` r
 ches %>% 
   ggplot(aes(liberalism, populism, colour = eu_position)) + 
   geom_point() +
@@ -45,11 +45,12 @@ ches %>%
   viridis::scale_color_viridis()
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
+Clustering
+----------
 
-## Clustering
-
-```{r}
+``` r
 set.seed(2018)
 ches_cluster_data <- ches %>% 
   select(party_name, vote_id, liberalism, populism2) %>% 
@@ -61,7 +62,7 @@ ches_cluster <- ches_cluster_data %>%
   purrr::map_df(scale) 
 ```
 
-```{r, eval = F}
+``` r
 distance <- get_dist(ches_cluster)
 fviz_dist(distance, 
  gradient = list(low = "#00AFBB", 
@@ -71,33 +72,44 @@ fviz_dist(distance,
 
 `kmeans()` function returns a list of components, including:
 
-* `cluster`: A vector of integers (from 1:k) indicating the cluster to which each point is allocated
-* `centers`: A matrix of cluster centers (clustqer means)
-* `totss`: The total sum of squares (TSS), i.e (xi ≠ x ̄)2. TSS measures the total variance in the data.
-* `withinss`: Vector of within-cluster sum of squares, one component per cluster
-* `tot.withinss`: Total within-cluster sum of squares, i.e. sum(withinss)
-* `betweenss`: The between-cluster sum of squares, i.e. totss ≠ tot.withinss
-* `size`: The number of observations in each cluster
+-   `cluster`: A vector of integers (from 1:k) indicating the cluster to which each point is allocated
+-   `centers`: A matrix of cluster centers (clustqer means)
+-   `totss`: The total sum of squares (TSS), i.e (xi ≠ x ̄)2. TSS measures the total variance in the data.
+-   `withinss`: Vector of within-cluster sum of squares, one component per cluster
+-   `tot.withinss`: Total within-cluster sum of squares, i.e. sum(withinss)
+-   `betweenss`: The between-cluster sum of squares, i.e. totss ≠ tot.withinss
+-   `size`: The number of observations in each cluster
 
-```{r}
+``` r
 k3 <- kmeans(ches_cluster, centers = 3, nstart = 25, iter.max = 10)
 ggf <- fviz_cluster(k3, data = ches_cluster, show.clust.cent = T, text = "vote_id")
 ggf + theme_gdocs()
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
+``` r
 ches_cluster_data$k3 <- k3$cluster
 
 ches_clust <- ches %>%
   left_join(ches_cluster_data)
+```
 
+    ## Joining, by = c("party_name", "vote_id", "populism2", "liberalism")
+
+    ## Warning: Column `party_name` has different attributes on LHS and RHS of
+    ## join
+
+    ## Warning: Column `populism2` has different attributes on LHS and RHS of join
+
+    ## Warning: Column `liberalism` has different attributes on LHS and RHS of
+    ## join
+
+``` r
 # save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
 ```
 
-
-
-
-```{r}
+``` r
 fviz_cluster(
   k3, 
   data = ches_cluster,
@@ -107,21 +119,28 @@ fviz_cluster(
 )
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
-
-```{r}
+``` r
 # Elbow method
 fviz_nbclust(ches_cluster, kmeans, method = "wss") +
   geom_vline(xintercept = 4, linetype = 2) +
   labs(subtitle = "Elbow method") + 
   theme_gdocs()
+```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
+``` r
 # Silhouette method
 fviz_nbclust(ches_cluster, kmeans, method = "silhouette") +
   labs(subtitle = "Silhouette method") +
   theme_gdocs()
+```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-10-2.png)
+
+``` r
 # Gap statistic
 # nboot = 50 to keep the function speedy.
 # recommended value: nboot= 500 for your analysis.
@@ -131,12 +150,13 @@ fviz_nbclust(ches_cluster, kmeans, nstart = 25, method = "gap_stat", nboot = 50)
   theme_gdocs()
 ```
 
-According to these observations, it’s possible to define k = 4 as the optimal number of clusters in the data.
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-10-3.png)
 
+According to these observations, it’s possible to define k = 4 as the optimal number of clusters in the data.
 
 2 dimensions do not need pca
 
-```{r, eval = F}
+``` r
 library(purrr)
 res <- purrr::map(2:8, ~ kmeans(ches_cluster, .))
 library(ggfortify)
@@ -145,7 +165,7 @@ autoplot(res, data = ches_cluster, ncol = 3) + theme(legend.position = "none")
 
 normal scatterplots
 
-```{r}
+``` r
 k_cluster_dat <- 2:8 %>%
   purrr::map(~ kmeans(ches_cluster, .x)$cluster) %>%
   reduce(cbind) %>%
@@ -163,28 +183,48 @@ k_cluster_dat %>%
   theme(legend.position = "none")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
-
-```{r}
+``` r
 cbind(ches_cluster, cluster = k3$cluster) %>%
   group_by(cluster) %>%
   summarise_all(.funs = list(m = mean, s = sd))
 ```
 
+    ## # A tibble: 3 x 5
+    ##   cluster liberalism_m populism2_m liberalism_s populism2_s
+    ##     <int>        <dbl>       <dbl>        <dbl>       <dbl>
+    ## 1       1      -1.09         0.437        0.418       0.770
+    ## 2       2       1.26         1.12         0.411       0.676
+    ## 3       3      -0.0298      -0.784        0.656       0.396
 
-## K-Medoids
+K-Medoids
+---------
 
 The most common k-medoids clustering methods is the PAM algorithm (Partitioning Around Medoids, Kaufman & Rousseeuw, 1990).
 
-```{r}
+``` r
 res_pam <- pam(ches_cluster, 3, metric = "euclidean", stand = FALSE)
 res_pam$clustering
+```
 
+    ##   [1] 1 1 1 1 2 2 2 2 2 1 3 1 3 2 1 2 1 2 1 3 1 1 2 2 2 1 1 2 3 3 1 1 2 2 1
+    ##  [36] 3 3 3 1 1 3 1 2 1 2 2 2 1 1 2 1 1 1 1 1 1 1 1 1 2 3 3 2 2 2 2 1 1 2 2
+    ##  [71] 2 1 1 1 1 1 3 2 3 2 1 1 2 3 3 2 2 2 2 1 2 1 1 3 1 2 3 1 1 2 1 1 1 1 1
+    ## [106] 3 1 2 2 2 1 3 2 2 3 1 1 3 3 1 2 2 1 3 1 1 2 1 1 1 2 2 2 1 3 1 1 2 2 2
+    ## [141] 3 3 2 2 1 3 3 2 2 2 3 2 1 2 1 3 3 2 2 2 1 1 1 2 3 3 1 1 1 3 2 2 3 2 3
+    ## [176] 3 2 2 2 3 3 2 1 3 1 2 3 2 1 3 3 3 2 2 2 2 2 2 3 2 2 2 2 2 2 3 1 2 3 3
+    ## [211] 2 2 1 2 2 2 2 1 1 1 2 1 2 1 1 1 3 3 1 3 1 3 1 3 1 2 3 2 1 3 3 1 1 3 1
+    ## [246] 2 2 1 1 2 3 3 2 2 1 2 2 1 1 1 3 1 2 2 1 2 1 1
+
+``` r
 fviz_nbclust(ches_cluster, pam, method = "silhouette")+
 theme_hc()
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-14-1.png)
+
+``` r
 km_cluster_dat <- 2:8 %>%
   purrr::map(~ pam(ches_cluster, k = ., metric = "euclidean", stand = FALSE)$clustering) %>%
   reduce(cbind) %>%
@@ -203,30 +243,49 @@ gg_km <- km_cluster_dat %>%
 gg_km
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-15-1.png)
+
+``` r
 res_pam$medoids
 ```
 
-```{r}
+    ##      liberalism  populism2
+    ## [1,] -0.9858867 -0.2065320
+    ## [2,]  0.2614908 -0.7920694
+    ## [3,]  1.3112089  1.2857607
+
+``` r
 cbind(ches_cluster, cluster = res_pam$clustering) %>%
   group_by(cluster) %>%
   summarise_all(.funs = list(m = median))
 ```
 
-```{r}
+    ## # A tibble: 3 x 3
+    ##   cluster liberalism_m populism2_m
+    ##     <int>        <dbl>       <dbl>
+    ## 1       1       -1.07       -0.207
+    ## 2       2        0.299      -0.792
+    ## 3       3        1.34        1.29
+
+``` r
 fviz_nbclust(ches_cluster, clara, method = "silhouette")+
 theme_classic()
 ```
 
-# HCA
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
-```{r}
+HCA
+===
+
+``` r
 res.dist <- dist(ches_cluster, method = "euclidean")
 res.hc <- hclust(d = res.dist, method = "ward.D2")
 fviz_dend(res.hc, cex = 0.5)
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-19-1.png)
+
+``` r
 # Cut tree into 3 groups
 grp <- cutree(res.hc, k = 3)
 
@@ -240,7 +299,9 @@ fviz_dend(
 )
 ```
 
-```{r, fig.height=10, fig.width=10}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-20-1.png)
+
+``` r
 fviz_dend(
   res.hc, 
   cex = 1, 
@@ -250,14 +311,46 @@ fviz_dend(
 )
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-21-1.png)
+
+``` r
 require("igraph")
+```
+
+    ## Loading required package: igraph
+
+    ## 
+    ## Attaching package: 'igraph'
+
+    ## The following object is masked from 'package:tidyr':
+    ## 
+    ##     crossing
+
+    ## The following objects are masked from 'package:purrr':
+    ## 
+    ##     compose, simplify
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     as_data_frame, groups, union
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     decompose, spectrum
+
+    ## The following object is masked from 'package:base':
+    ## 
+    ##     union
+
+``` r
 ggrep <- fviz_dend(res.hc, k = 3, k_colors = "jco",
           type = "phylogenic", repel = TRUE)
 ggrep
 ```
 
-```{r}
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-22-1.png)
+
+``` r
 fviz_dend(res.hc, k = 3, # Cut in four groups
           k_colors = "jco",
           type = "phylogenic", 
@@ -265,8 +358,9 @@ fviz_dend(res.hc, k = 3, # Cut in four groups
           phylo_layout = "layout_with_drl")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
-```{r}
+``` r
 fviz_dend(res.hc, k = 3, # Cut in four groups
           k_colors = "jco",
           type = "phylogenic", 
@@ -274,8 +368,9 @@ fviz_dend(res.hc, k = 3, # Cut in four groups
           phylo_layout = "layout_as_tree")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
-```{r}
+``` r
 fviz_dend(res.hc, k = 3, # Cut in four groups
           k_colors = "jco",
           type = "phylogenic", 
@@ -283,8 +378,9 @@ fviz_dend(res.hc, k = 3, # Cut in four groups
           phylo_layout = "layout.gem")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-25-1.png)
 
-```{r}
+``` r
 fviz_dend(res.hc, k = 3, # Cut in four groups
           k_colors = "jco",
           type = "phylogenic", 
@@ -292,8 +388,9 @@ fviz_dend(res.hc, k = 3, # Cut in four groups
           phylo_layout = "layout.mds")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-26-1.png)
 
-```{r}
+``` r
 gg10 <- fviz_dend(res.hc, k = 3, # Cut in four groups
           k_colors = "jco",
           type = "phylogenic", 
@@ -302,11 +399,23 @@ gg10 <- fviz_dend(res.hc, k = 3, # Cut in four groups
 gg10
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-27-1.png)
 
-## Compare clustering algorithms in R
+Compare clustering algorithms in R
+----------------------------------
 
-```{r}
+``` r
 library(clValid)
+```
+
+    ## 
+    ## Attaching package: 'clValid'
+
+    ## The following object is masked from 'package:igraph':
+    ## 
+    ##     clusters
+
+``` r
 # Iris data set:
 # - Remove Species column and scale df <- scale(iris[, -5])
 # Compute clValid
@@ -317,10 +426,43 @@ intern <- clValid(
   clMethods = clmethods, 
   validation = "internal"
 ) 
+```
+
+    ## Warning in clValid(ches_cluster %>% as.matrix, nClust = 2:8, clMethods =
+    ## clmethods, : rownames for data not specified, using 1:nrow(data)
+
+``` r
 summary(intern)
 ```
 
-```{r, eval = F}
+    ## 
+    ## Clustering Methods:
+    ##  hierarchical kmeans pam 
+    ## 
+    ## Cluster sizes:
+    ##  2 3 4 5 6 7 8 
+    ## 
+    ## Validation Measures:
+    ##                                  2       3       4       5       6       7       8
+    ##                                                                                   
+    ## hierarchical Connectivity  10.2683 17.5187 24.7937 35.0802 42.4873 45.0024 54.0444
+    ##              Dunn           0.0489  0.0569  0.0586  0.0678  0.0830  0.0886  0.0939
+    ##              Silhouette     0.4421  0.3938  0.4172  0.3977  0.3853  0.3710  0.3428
+    ## kmeans       Connectivity  27.6107 28.8794 42.6972 48.6603 59.4067 59.1024 80.4679
+    ##              Dunn           0.0336  0.0253  0.0327  0.0478  0.0201  0.0357  0.0419
+    ##              Silhouette     0.4495  0.4394  0.4634  0.4296  0.3995  0.4060  0.3596
+    ## pam          Connectivity  26.5952 39.1357 39.8861 38.1683 67.1135 73.0849 78.7849
+    ##              Dunn           0.0357  0.0331  0.0306  0.0334  0.0264  0.0243  0.0254
+    ##              Silhouette     0.4486  0.4179  0.4614  0.4267  0.4014  0.4006  0.3771
+    ## 
+    ## Optimal Scores:
+    ## 
+    ##              Score   Method       Clusters
+    ## Connectivity 10.2683 hierarchical 2       
+    ## Dunn          0.0939 hierarchical 8       
+    ## Silhouette    0.4634 kmeans       4
+
+``` r
 # Stability measures
 clmethods <- c("hierarchical","kmeans","pam")
 stab <- clValid(
@@ -332,30 +474,67 @@ stab <- clValid(
 optimalScores(stab)
 ```
 
-
-## Model-Based Clustering
+Model-Based Clustering
+----------------------
 
 The model parameters can be estimated using the Expectation-Maximization (EM) algorithm initialized by hierarchical model-based clustering. Each cluster k is centered at the means μk, with increased density for points near the mean.
 
-
-```{r}
+``` r
 library(mclust)
+```
+
+    ## Warning: package 'mclust' was built under R version 3.4.3
+
+    ## Package 'mclust' version 5.4
+    ## Type 'citation("mclust")' for citing this R package in publications.
+
+    ## 
+    ## Attaching package: 'mclust'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     map
+
+``` r
 mc <- Mclust(ches_cluster) # Model-based-clustering 
 summary(mc)
 ```
 
+    ## ----------------------------------------------------
+    ## Gaussian finite mixture model fitted by EM algorithm 
+    ## ----------------------------------------------------
+    ## 
+    ## Mclust EII (spherical, equal volume) model with 4 components:
+    ## 
+    ##  log.likelihood   n df       BIC       ICL
+    ##       -655.0623 268 12 -1377.216 -1431.308
+    ## 
+    ## Clustering table:
+    ##  1  2  3  4 
+    ## 91 88 53 36
 
-```{r}
+``` r
 # BIC values used for choosing the number of clusters 
 fviz_mclust(mc, "BIC", palette = "jco")
+```
+
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-31-1.png)
+
+``` r
 # Classification: plot showing the clustering 
 fviz_mclust(mc, "classification", geom = "point",
 pointsize = 1.5, palette = "jco") # Classification uncertainty
+```
+
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-31-2.png)
+
+``` r
 fviz_mclust(mc, "uncertainty", palette = "jco")
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-31-3.png)
 
-```{r}
+``` r
 ches %>% 
   ggplot(aes(liberalism, populism, colour = mc$classification)) + 
   geom_point() +
@@ -366,9 +545,9 @@ ches %>%
   geom_density2d(alpha = .7, color = "gray") # Add 2D density 
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-32-1.png)
 
-
-```{r, eval = F}
+``` r
 library(highcharter)
 
 df1 <- tibble(vote = paste(ches_cluster_data$party_name, ches_cluster_data$vote_id, sep = " "), cluster = k3$cluster, x = as.vector(ches_cluster$liberalism), y = as.vector(ches_cluster$populism2)) %>%
@@ -382,13 +561,36 @@ hchart(df1, hcaes(x = x, y = y, name = vote, color = cluster), type = 'scatter')
   hc_chart(zoomType = "xy")
 ```
 
-## World Map
+World Map
+---------
 
-```{r}
+``` r
 library(ggplot2)
 world <- map_data("world")
-world$iso3 <- countrycode::countrycode(world$region, "country.name", "iso3c")
+```
 
+    ## 
+    ## Attaching package: 'maps'
+
+    ## The following object is masked from 'package:mclust':
+    ## 
+    ##     map
+
+    ## The following object is masked from 'package:cluster':
+    ## 
+    ##     votes.repub
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     map
+
+``` r
+world$iso3 <- countrycode::countrycode(world$region, "country.name", "iso3c")
+```
+
+    ## Warning in countrycode::countrycode(world$region, "country.name", "iso3c"): Some values were not matched unambiguously: Ascension Island, Azores, Barbuda, Bonaire, Canary Islands, Chagos Archipelago, Grenadines, Heard Island, Kosovo, Madeira Islands, Micronesia, Saba, Saint Martin, Siachen Glacier, Sint Eustatius, Virgin Islands
+
+``` r
 ches <- ches %>%
   mutate(country = stringr::str_replace(vote_id, "_.*?$", "")) %>%
   mutate(iso3 = countrycode::countrycode(country, "iso2c", "iso3c"))
@@ -408,9 +610,9 @@ ggmap <- world %>%
 ggmap
 ```
 
+![](A2_ches_clustering_files/figure-markdown_github/unnamed-chunk-34-1.png)
 
-
-```{r, eval = F}
+``` r
 #ess_clean <- ess_sub  %>% 
   # mutate(eu_member =
   #          recode_factor(cntry,
@@ -422,5 +624,3 @@ ggmap
   #       ) %>%
   # mutate(post_com = ifelse(region %in% c("Estonia", "Poland", "Slovenia", "Czech Republic", "Russian Federation"), "Post C", "West"))
 ```
-
-
