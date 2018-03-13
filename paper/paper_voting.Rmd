@@ -28,7 +28,6 @@ link-citations: yes
 
 # Introduction
 
-
 ```{r child = '1_intro.Rmd'}
 ```
 
