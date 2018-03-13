@@ -1,0 +1,19 @@
+---
+output: pdf_document
+---
+
+## Research Design
+
+## Data Descriptions
+
+The data used for testing our hypotheses are based on the data set of the European Social Survey (ESS 8 2016). The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected in the eigth round of the survey in 2016 in 18 countries. These were recorded with the help of personal interviews...
+
+... variables as well. 
+
+## Data Transformations
+
+### Ches Clustering
+
+### EFA Scores
+
+

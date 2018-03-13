@@ -1,0 +1,547 @@
+---
+title: "ESS"
+author: "Rebecca & Simon "
+#output: html_notebook
+output: github_document
+---
+
+## ToDo
+
+* Build github Repo (Name?) -> social data science journey.
+* Derive research question
+* data wrangling
+* fitting models
+* write semester paper:
+    + Die Studierenden führen für 12 LP abschließend eine eigene Untersuchung durch zu **zwei oder mehr selbst gewählten Beteiligungs- bzw. Entscheidungsprozessen**, um eine konkrete Forschungsfrage zu beantworten (ca. 30 Seiten). Wieviele Seiten zu Zweit?
+* http://students.brown.edu/seeing-theory/basic-probability/index.html#section2
+
+## Research Question(s)
+
+* internal and external political efficacy  -> likelihood to vote right/populist or green party? Cultural clash. 
+* Are citizens who live in systems that provide extensive direct democratic decision-making processes characterized by higher levels of trust in political institutions and higher external political efficacy?
+* ESS in combination with direct democracy dataset?
+* Macro predictors: polticial system or number of referenda
+* Multilevel-Baysian Regression. 
+
+
+
+## Packages
+
+```{r}
+pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes)
+```
+
+## Data
+
+```{r}
+ess <- read_sav("data/ESS8e01.sav")
+ess_add <- read_sav("data/ESS1-7e01.sav") %>%
+  filter(! cntry == "RU" & !cntry == 6)
+# unique(ess$cntry) %in% unique(ess_add$cntry)
+```
+
+Select Variables from ESS round 8 and the cummulative round 1-7 for missing country data ([ESS Long Format](http://www.europeansocialsurvey.org/downloadwizard/)). The countries are augumented from: 
+
+* `Round 6`: Ukraine, Slovakia, Hugary, Cyprus, Bulgaria, Albania
+* `Round 5`: Turkey, Kosovo, Italy, Greece, Croatia
+* `Round 7`: Spain, Protugal, Lithuania, Denmark
+
+```{r}
+tx_clean_spss <- function(x){
+  x %>%     
+    mutate_if(is.numeric, as.numeric) %>%
+    mutate_if(is.character, as.character) %>%
+    mutate_if(is.factor, as.factor)
+}
+
+get_party <- function(x){
+  x %>% 
+    select(contains("prtvt")) %>%
+    mutate_all(sjmisc::to_label) %>% 
+    mutate_all(as.character) %>%
+    mutate(vote = apply(., 1, function(x) paste(ifelse(is.na(x), "", x), collapse = "")))
+}
+
+select_both <- function(x){
+  x %>%
+    select(idno, cntry, essround, hinctnta, polintr, lrscale,
+         rlgatnd, pbldmn, ctzcntr, rlgatnd, edulvlb, eduyrs, yrbrn, gndr,
+         dplyr::starts_with("trst"),
+         dplyr::starts_with("stf"),
+         #dplyr::starts_with("im"),
+         imbgeco, imsmetn, imdfetn, impcntr,
+         #dplyr::starts_with("prtvt")
+    ) %>%
+    mutate(cname = sjmisc::to_label(cntry)) %>% 
+    mutate(cname = countrycode::countrycode(cname, "country.name", "country.name")) %>%
+    mutate(iso2 = countrycode::countrycode(cname, "country.name", "iso2c")) %>%
+    mutate(iso3 = countrycode::countrycode(cname, "country.name", "iso3c")) %>%
+    rename(
+      id = idno, 
+      round = essround, 
+      income = hinctnta,
+      pol_inter = polintr,
+      gndr = gndr,
+      year = yrbrn,
+      edu_year = eduyrs,
+      edu = edulvlb,
+      rel = rlgatnd,
+      demo = pbldmn,
+      citz = ctzcntr,
+      trust_parl = trstprl, 
+      trust_pol = trstplt,
+      trust_party = trstprt,
+      trust_leg = trstlgl,
+      trust_police = trstplc,
+      trust_eu = trstep,
+      s_life = stflife,
+      s_econ = stfeco,
+      s_gov = stfgov,
+      s_dem = stfdem,
+      imm_econ = imbgeco,
+      imm_same = imsmetn,
+      imm_diff = imdfetn,
+      imm_poor = impcntr
+    )
+}
+```
+
+
+
+```{r}
+# spss data frame carry additional attribute information that is redudant and errorious for further analysis. 
+ess_prep <- ess %>% 
+  select_both()
+
+vote <- ess %>%
+  get_party()
+ess_prep$vote <- vote$vote
+
+ess_add_prep <- ess_add %>% 
+  select_both()
+
+vote <- ess_add %>%
+  get_party()
+ess_add_prep$vote <- vote$vote
+
+
+sh <- c("idno",  "nwspol", "etusoft", "polintr", "sppsgva", "ctrolga", "sppipla", "ptppola", "wrkprty", "sgnptit",  "pbldmn", "lrscale", "stflife",  "stfeco",  "stfgov",  "stfdem",  "stfedu", "stfhlth", "euftf", "imbgeco", "imsmetn", "imdfetn", "impcntr", "rlgatnd", "ctzcntr", "sblazy", "gndr", "yrbrn", "eduyrs", "dulvlb", "inctnta", "region")
+
+for(jj in sh){
+  print(jj)
+  print(any(colnames(ess_add) %in% jj))
+}
+
+### Not included so far
+# news_pol = nwspol
+# inet = netusoft
+# poli_intr = polintr
+# have_say = psppsgva
+# pol_grp = actrolga
+# have_infl = psppipla
+# in_eff = cptppola
+# party_act = wrkprty
+# sign_pet = sgnptit
+# state_edu = stfedu
+# sate_health = stfhlth
+# eu_state = euftf
+# social_lazy = sblazy
+# region = regio
+```
+
+
+Diverging variable naming due to country time space needs special management and renaming. 
+
+```{r}
+# ess_prep %>% map_lgl(~any(!is.na(.)))
+# select which columns do not have NA only
+vote_sel <- ess_add_prep %>%
+  map_lgl(~any(!is.na(.)))
+
+ess_add_prep <- ess_add_prep %>%
+  select(which(vote_sel))
+
+# test if NA remain in vote variables
+ess_add_prep %>% map_lgl(~any(!is.na(.)))
+
+# bidn round 8 and 5-7
+ess_final <- bind_rows(ess_prep, ess_add_prep) %>%
+  tx_clean_spss()
+
+# rename voting columns
+cols <- ess_final %>%
+  select(contains("prtvt")) %>%
+  colnames() %>%
+  stringr::str_extract("..$") %>%
+  paste0("vote_",.)
+
+index <- which(stringr::str_detect(colnames(ess_final), "prtvt"))
+colnames(ess_final)[index] <- cols
+
+# ess_final %>%
+#   group_by(cntry) %>%
+#   slice(1)
+# 
+# ess_final %>% 
+#   count(cntry, round) %>% 
+#   count(cntry)
+colnames(ess_final)
+table(ess_final$vote)
+glimpse(ess_final)
+
+
+ess_final %>% 
+  group_by(cntry) %>%
+  count(is.na(vote))
+```
+
+
+## Country by Round
+
+```{r}
+ess_final %>% 
+  count(cntry, round) %>%
+  mutate(cntry = as.character(cntry)) %>%
+  mutate(round = as.factor(round)) %>%
+  mutate(cntry = forcats::fct_reorder(cntry, n)) %>%
+  ggplot(aes(cntry, n, fill = round, colour = round, label = n)) +
+  geom_bar(stat = "identity", alpha = .3, colour = NA) +
+  geom_point(size = 3) + 
+  coord_flip() +
+  #ylim(800, 3000) +
+  geom_text(nudge_y = 150) +
+  viridis::scale_fill_viridis(discrete = T, direction = -1) +
+  viridis::scale_colour_viridis(discrete = T, direction = -1) +
+  theme_hc()
+
+#plotly::ggplotly()
+```
+
+```{r}
+glimpse(ess_final)
+```
+
+## Map Countries Selected
+
+```{r}
+library(ggplot2)
+world <- map_data("world")
+world$iso3 <- countrycode::countrycode(world$region, "country.name", "iso3c")
+world$value <- ifelse(world$iso3 %in% unique(ess_final$iso3), "yes", "no")
+# table(world$value)
+# world %>% 
+#   ggplot(aes(long, lat, group = group)) + 
+#     geom_polygon(fill='grey')
+
+world %>% 
+  ggplot(aes(long, lat, group = group, fill = value)) + 
+  geom_polygon() +
+  xlim(-20,50) + 
+  ylim(30,80) +
+  scale_fill_manual("selected", values = c("gray90", "blue")) +
+  theme_map()
+```
+
+
+
+## Match party data 
+
+
+```{r}
+ess_final %<>% 
+  mutate(populism = case_when(
+
+    #Belgium
+    vote == "Parti Populaire" ~ "Illiberal Populism",
+    vote == "PVDA+" ~ "Liberal Populism",
+    vote == "Vlaams Belang" ~ "Illiberal Populism",
+    
+    #Denmark
+    vote == "Dansk Folkeparti - Danish peoples party" ~ "Illiberal Populism",
+    vote == "Enhedslisten - Unity List - The Red-Green Alliance" ~ "Liberal Populism",
+    #Folkebevægelsen mod EU is missing   
+    
+    #Deutschland
+    vote == "NPD" ~ "Illiberal Populism",
+    vote == "AfD" ~ "Illiberal Populism",
+    vote == "Die Linke" ~ "Liberal Populism",
+    vote == "Piratenpartei" ~ "Liberal Populism",
+    #Die Tierpartei not included
+    
+    #Greece
+    vote == "Golden Dawn (Xrusi Augi)" ~ "Illiberal Populism",
+    vote == "The Coalition of the Radical Left (SYRIZA)" ~ "Liberal Populism",
+    vote == "The Communist Party of Greece (KKE)" ~ "Illiberal Populism",
+    vote == "The Popular Orthodox Rally (LAOS)" ~ "Illiberal Populism",
+    #vote == "Independent Citizens' Movement (SPITHA)" ~ "Illiberal Populism",
+    #ANEL gab es 2010 noch gar nicht :(
+
+    #Spain
+    vote == "AMAIUR" ~ "Liberal Populism",
+    vote == "Bloque Nacionalista Galego (BNG)" ~ "Liberal Populism",
+    vote == "Izquierda Unida (IU) - (ICV en Cataluña)" ~ "Liberal Populism",
+    #PODEMOS was created in 2014
+  
+    #Frankreich
+    vote == "FN (Front National)" ~ "Illiberal Populism",
+    vote == "MPF (Mouvement pour la France)" ~ "Illiberal Populism",
+    vote == "FDG (Front de Gauche)" ~ "Liberal Populism",
+    #fr_PCF	Parti Communiste Français	
+    #fr_PG	Parti de Gauche	
+    #fr_Ensemble	Ensemble  --> unter FDG
+    #PG, MPF, PCF und Ensamble fehlt
+
+    #Ireland
+    vote == "Green Party" ~ "Liberal Populism",
+    vote == "Sinn Féin" ~ "Liberal Populism",
+    vote == "Anti-Austerity Alliance - People Before Profit" ~ "Liberal Populism",
+    vote == "Socialist Party - United Left Alliance" ~ "Liberal Populism",
+
+    #Italy
+    vote == "Movimento 5 Stelle" ~ "Liberal Populism",
+    vote == "Fratelli d'Italia" ~ "Illiberal Populism",
+    vote == "Lega Nord" ~ "Illiberal Populism",
+    vote == "Sinistra Ecologia e Libertà (SEL)" ~ "Liberal Populism",
+    #it_RC	Partito della Rifondazione Comunista	missing
+
+    #Netherland
+    vote == "Socialist Party" ~ "Liberal Populism",
+    vote == "Party for Freedom" ~ "Illiberal Populism", 
+    vote == "Party for the Animals" ~ "Liberal Populism",
+    vote == "50PLUS" ~ "Liberal Populism",
+
+    #UK
+    vote == "Green Party" ~ "Liberal Populism",
+    vote == "UK Independence Party" ~ "Illiberal Populism",
+
+    #Portugal
+    vote == "Bloco de Esquerda (BE)" ~ "Liberal Populism",
+    vote == "Coligação Democrática Unitária (CDU)" ~ "Liberal Populism",
+    #por_MPT	Partido da Terra missing
+
+    #Österreich
+    vote == "BZÖ" ~ "Illiberal Populism",
+    vote == "FPÖ" ~ "Illiberal Populism",    
+    vote == "Team Frank Stronach" ~ "Illiberal Populism",  
+
+    #Finland  
+    vote == "True Finns" ~ "Illiberal Populism",
+    vote == "Left Alliance" ~ "Liberal Populism",
+
+    #Sweden
+    vote == "FI (Feministiskt initiativ)" ~ "Liberal Populism",
+    vote == "Piratpartiet" ~ "Liberal Populism", 
+#    vote == "Sverigedomkraterna" ~ "Illiberal Populism", 
+    stringr::str_detect(vote, pattern = "Sverig") ~ "Illiberal Populism",  
+    vote == "Vänsterpartiet" ~ "Liberal Populism",
+
+    #Bulgaria
+    vote == "PP Ataka" ~ "Illiberal Populism",
+    vote == "PP VMRO - Balgarsko natsionalno dvizhenie" ~ "Illiberal Populism", 
+    vote == "PP Natsionalen front za dpasenie na Bulgaria" ~ "Illiberal Populism", 
+    #bul_BBT	Bulgaria bez Tsenzura wasn't there in 2014
+
+    #Czech Republic
+    vote == "KSČM" ~ "Illiberal Populism",
+    vote == "ANO 2011" ~ "Liberal Populism",
+    vote == "Úsvit přímé demokracie Tomia Okamury" ~ "Illiberal Populism", 
+    #cz_SVOBODNI.... miss you
+      
+    #Estonia
+    vote == "Erakond Eestimaa Rohelised" ~ "Liberal Populism",
+    vote == "Eesti Vabaerakond" ~ "Liberal Populism",
+
+    #Hungary
+    #vote == "Fidesz - KDNP (Fidesz – Magyar Polgári Szövetség Keresztényd" ~ "Illiberal Populism",
+    stringr::str_detect(vote, "Fidesz") ~ "Illiberal Populism",
+    vote == "Jobbik (Jobbik Magyarországért Mozgalom)" ~ "Illiberal Populism",
+    vote == "LMP (Lehet Más A Politika)" ~ "Liberal Populism",
+
+
+    #Lithuania
+    vote == "Electoral Action of Poles in Lithuania (LLRA)" ~ "Illiberal Populism",
+    vote == "Party Order and Justice (TT)" ~ "Illiberal Populism",
+    vote == "Political Party 'The Way of Courage' (DK)" ~ "Illiberal Populism",
+
+
+    #Poland
+    vote == "Law and Justice" ~ "Illiberal Populism",
+    vote == "Together Party" ~ "Illiberal Populism",
+    vote == "Kukiz'15" ~ "Illiberal Populism",
+    #pol_KNP	Kongres Nowej Prawicy könnte auch Kukiz'15 sein
+    
+
+    #Slovakia; 
+    vote == "Freedom and Solidarity (SaS)" ~ "Liberal Populism",
+    vote == "Ordinary People and Independent Personalities (OLaNO)" ~ "Illiberal Populism",
+    #slo_SNS	Slovenská národná strana	 Missing
+    
+    #Croatia; 
+    vote == "Hrvatska stranka prava (HSP)" ~ "Illiberal Populism",
+
+
+    #Cyprus; 
+    vote == "Progressive Party of Working People (AKEL)" ~ "Liberal Populism",
+    vote == "The Cyprus Green Party" ~ "Liberal Populism",
+    
+    is.na(vote) ~ NA_character_,
+    TRUE ~ "Establishment"
+   ))
+
+ess_final %>% 
+  group_by(cntry, populism) %>%
+  tally %>%
+  count(cntry)
+```
+
+
+
+
+
+## binoculaR
+
+`binoculaR` is an own product developed to mimic SPSS in order to quickly inspect variables and their corresponding levels/ attributes. 
+
+```{r, eval = F}
+#devtools::install_github("systats/binoculaR", force = T)
+selected <- binoculaR::binoculaR(ess)
+save(selected, file = "selected.Rdata")
+```
+
+
+List all variables (old and new names) as well as their range of levels. 
+
+
+```{r, eval = F}
+ess_clean <- ess_sub  %>% 
+  # mutate(eu_member =
+  #          recode_factor(cntry,
+  #               DE = 1958, BE = 1958, FR = 1958, NL = 1958, IE = 1973,
+  #               GB = 1973, FI = 1995, AT = 1995, SE = 1995, EE = 2004,
+  #               PL = 2004, SI = 2004, CZ = 2004, CH = 0, IL = 0,
+  #               IS = 0, NO = 0, RU = 0
+  #             )
+  #       ) %>%
+  # mutate(post_com = ifelse(region %in% c("Estonia", "Poland", "Slovenia", "Czech Republic", "Russian Federation"), "Post C", "West"))
+```
+
+## Get Info
+
+* better left-right scale more athoritarian
+* horse shoe theory
+* Set up Rmarkdown paper template
+* Set up Project page
+* Paraboost [D3partitionR](https://github.com/AntoineGuillot2/D3partitionR)
+
+
+## Data 
+
+* party recoding
+* Inspect each variable with a histogram or barplot, check range and validate data. 
+
+
+### Block 5
+
+* clean Variables
+* document range
+
+```{r, eval = F}
+p5 <- ess_clean %>%
+  select(gndr, edu, income, rel, year) %>%
+  gather("var", "value") %>%
+  ggplot(aes(value, fill = var)) +
+  geom_bar() +
+  facet_wrap(~var, scales = "free") +
+  viridis::scale_fill_viridis(discrete = T)
+p5
+```
+
+
+
+
+
+## EDA
+
+* Check selective or pairwise compare correlations (stepwiseAIC or multilevel predction tree).
+* spatial mapping
+* Factor scores (Factor Analysis)
+    + Trust (target)
+    + Imm (X)
+
+```{r eda1, eval = F,  echo = F, fig.height=6, fig.width=10, results="show"}
+# citizens trust in european institutions 
+d <- ess_sub
+
+# graph settings
+set_theme(#geom.outline.color = "antiquewhite4", 
+          #geom.outline.size = 1, 
+          #geom.label.size = 2,
+          #geom.label.color = "grey50",
+          title.color = "black", 
+          title.size = 1.5, 
+          axis.angle.x = 45, 
+          axis.textcolor = "black", 
+          base = theme_538())
+
+p1 <- sjp.frq(d$trust_parl, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+p2 <- sjp.frq(d$trust_leg, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+p3 <- sjp.frq(d$trust_police, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+p4 <- sjp.frq(d$trust_parl, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+p5 <- sjp.frq(d$trust_party, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+p6 <- sjp.frq(d$trust_pol, 
+        type = "hist", 
+        show.mean = TRUE, 
+        show.values = FALSE, 
+        geom.colors = "#336699", prnt.plot = F)
+
+library(gridExtra)
+grid.arrange(p1$plot, p2$plot, p3$plot, p4$plot, p5$plot, p6$plot, nrow = 3, top = grid::textGrob("Trust in Political Institutions", vjust = 0.5, gp = grid::gpar(fontface = "bold", cex = 2)))
+```
+
+
+
+
+## Statistical Modeling
+
+### Multilevel 
+
+* Y = voting right wing/populist
+* X_1 = ex_eff (trust factor scores) + in_eff
+* X_2 = immigration(factor scores)
+* X_3 = s_gov + s_dem + interaction + demo + sign_pet
+* X_4 = poli_intr + lrscale + party_act + news_pol
+* X_5 = gndr + edu + income + rel + year
+* X_6 = social_lazy (social benefit attitudes)
+* What about Z predictors?
+
+
+### Prection Power
+
+* multilevel tree
+* `brms`
+* viele random slopes

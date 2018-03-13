@@ -1,0 +1,41 @@
+---
+output: pdf_document
+---
+
+## Subcaption 1
+
+## Subcaption 2
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+x <- 1233.34
+y <- 44864
+z <- 34.876
+```
+
+
+
+This is a great way to test whether $`r x`$ really works in the way it is intended to work. This is different though becasue $`r toString(z)`$ might be better actually. Or how about $`r I(y)`$.
+
+
+**Some Citations**
+
+* brady1995beyond = `brady1995beyond`
+* [@brady1995beyond] = `[@brady1995beyond]`
+* [@brady1995beyond, p. 38] = `[@brady1995beyond, p. 38]`
+* @brady1995beyond [p. 33]  = `@brady1995beyond [p. 33] `
+* [-@brady1995beyond] = `[-@brady1995beyond]`
+* [@brady1995beyond; @brady1995beyond] = `[@brady1995beyond; @brady1995beyond]`
+* [for example see @brady1995beyond: 92-93] = `[for example see @brady1995beyond: 92-93]`
+
+
+ALLE Zitierweisen von Zotero gibts [HIER](https://www.zotero.org/styles).
+
+
+* Populism as we understand it
+* Liberal Populism
+* Illiberal Populism
+* Cultural Backlash
+* Economic Deprivation

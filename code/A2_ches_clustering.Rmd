@@ -100,7 +100,7 @@ glimpse(ches_clust)
 ches_trick <- ches_clust %>% mutate(k4cluster = NULL)
 ches_clust %>% 
   mutate(k4cluster = ifelse(k4cluster %in% c(1,3), 3, k4cluster)) %>%
-  ggplot(aes(liberalism, populism, colour = k4cluster)) + 
+  ggplot(aes(liberalism, populism2, colour = k4cluster)) + 
   geom_point(data = ches_trick, color = "gray") +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
