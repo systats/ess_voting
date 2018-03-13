@@ -7,9 +7,7 @@ output: pdf_document
 ## Subcaption 2
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+```{r}
 x <- 1233.34
 y <- 44864
 z <- 34.876

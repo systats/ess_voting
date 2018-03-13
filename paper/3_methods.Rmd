@@ -2,17 +2,57 @@
 output: pdf_document
 ---
 
+```{r setup, include = F}
+knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
+```
+
+```{r, echo = F}
+pacman::p_load(dplyr, ggplot2, ggthemes, forcats)
+dt <- get(load("data/data_final.Rdata"))
+ggplot2::theme_set(ggthemes::theme_few())
+```
+
 ## Research Design
 
 ## Data Descriptions
 
-The data used for testing our hypotheses are based on the data set of the European Social Survey (ESS 8 2016). The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected in the eigth round of the survey in 2016 in 18 countries. These were recorded with the help of personal interviews...
+Different data sources were merged to get a more feature rich dataset. 
+
+* **European Social Survey** [@ess08]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
+* **Chapel Hill Expert Survey**. Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
+
+```{r, fig.cap="Number of Survey Responses by Country"}
+dt %>%
+  group_by(country, round, round_year) %>%
+  tally %>%
+  ungroup() %>%
+  mutate(country = fct_reorder(country, n)) %>%
+  mutate(label = paste0(round, " (", round_year, ")")) %>%
+  ggplot(aes(country, n, fill = label)) +
+  geom_bar(stat = "identity") +
+  scale_fill_grey(start = .8, end = .4) +
+  coord_flip() +
+  labs(x = "", y = "")
+```
+
+https://www.chesdata.eu/our-surveys/
 
 ... variables as well. 
+
 
 ## Data Transformations
 
 ### Ches Clustering
+
+```{r}
+dt %>%
+  ggplot(aes(income)) +
+  geom_bar() +
+  facet_wrap(~country) 
+```
+
+
+
 
 ### EFA Scores
 

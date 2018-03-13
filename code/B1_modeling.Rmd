@@ -46,6 +46,8 @@ data_final <- data_final %>%
   mutate(vote_right = ifelse(k3 == 2, 1, 0)) %>%
   mutate(lr_dff = abs(lrscale - lrgen))
   
+#save(data_final, file = "data/Rdata/data_final.Rdata")
+
 data_final %>%
   dplyr::select(lr_dff, lrgen, lrscale) %>%
   summary
