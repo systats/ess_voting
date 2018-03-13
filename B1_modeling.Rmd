@@ -59,19 +59,50 @@ table(data_final$vote_right)
 
 ```{r}
 library(arm)
-data_final$trust_scores
+#data_final$trust_scores
 ml1 <- glmer(vote_right ~ trust_scores + (1|country), data = data_final, family = binomial(link = "logit"))
 display(ml1)
+# sjp.glmer(ml1)
+# marginal effects
+sjp.glmer(ml1, type = "eff", show.ci = TRUE)
 ```
+
+
+## brms
+
+```{r}
+library(brms)
+fit <- brm(vote_right ~ trust_scores + (1|country), data = data_final, family = binomial("probit"))
+summary(fit, waic = TRUE) 
+plot(fit)
+```
+
+
+
+
+
 
 ```{r}
 summary(data_final)
-ml2 <- glmer(vote_right ~ trust_scores + gndr + rel +(1|country), data = data_final, family = binomial(link = "logit"))
-display(ml2)
+glm2 <- glmer(vote_right ~ trust_scores + gndr + rel +(1|country), data = data_final, family = binomial(link = "logit"))
+display(glm2)
+
+library(sjPlot)
+ggg <- sjp.glmer(glm2, type = "eff")
+ggg
 ```
 
 ```{r}
 ml1 <- lmer(lr_dff ~ trust_scores + gndr + (1|country), data = data_final)
 display(ml1)
 ```
+
+
+```{r}
+library(sjPlot)
+plot_model(ml1)
+```
+
+
+
 

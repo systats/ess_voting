@@ -39,7 +39,7 @@ ches <- ches %>%
 ches %>% 
   ggplot(aes(liberalism, populism, colour = eu_position)) + 
   geom_point() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2))+
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
   #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
   ggthemes::theme_hc() +
   viridis::scale_color_viridis()
@@ -80,18 +80,35 @@ fviz_dist(distance,
 * `size`: The number of observations in each cluster
 
 ```{r}
-k3 <- kmeans(ches_cluster, centers = 3, nstart = 25, iter.max = 10)
-ggf <- fviz_cluster(k3, data = ches_cluster, show.clust.cent = T, text = "vote_id")
+k4 <- kmeans(ches_cluster, centers = 4, nstart = 25, iter.max = 10)
+ggf <- fviz_cluster(k4, data = ches_cluster, show.clust.cent = T, text = "vote_id")
 ggf + theme_gdocs()
 ```
 
 ```{r}
-ches_cluster_data$k3 <- k3$cluster
+ches_cluster_data$k4cluster <- k4$cluster
 
 ches_clust <- ches %>%
   left_join(ches_cluster_data)
 
 # save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
+```
+
+```{r, fig.width=10}
+glimpse(ches_clust)
+
+ches_trick <- ches_clust %>% mutate(k4cluster = NULL)
+ches_clust %>% 
+  mutate(k4cluster = ifelse(k4cluster %in% c(1,3), 3, k4cluster)) %>%
+  ggplot(aes(liberalism, populism, colour = k4cluster)) + 
+  geom_point(data = ches_trick, color = "gray") +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  ggthemes::theme_hc() +
+  viridis::scale_color_viridis() +
+  facet_wrap(~k4cluster, ncol = 4) +
+  theme(legend.position = "none")
 ```
 
 

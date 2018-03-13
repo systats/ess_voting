@@ -190,9 +190,32 @@ $(document).ready(function () {
 <h2>Data</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29sbmFtZXMoZXNzX3ByZXApXG5cbmBgYCJ9 -->
-<pre class="r"><code>colnames(ess_prep)
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3B0aW9ucyhzY2lwZW4gPSA5OTkpXG5lc3MgPC0gZ2V0KGxvYWQoXCJkYXRhL1JkYXRhL2Vzc19maW5hbC5SZGF0YVwiKSlcbmVzc19wcmVwIDwtIGVzcyBcbmVzc19wcmVwIDwtIGVzc19wcmVwICU+JVxuICBtdXRhdGUoXG4gICAgaWQgPSAxOm4oKSxcbiAgICByb3VuZF95ZWFyID0gY2FzZV93aGVuKFxuICAgICAgcm91bmQgPT0gOCB+IFwiMjAxNlwiLFxuICAgICAgcm91bmQgPT0gNyB+IFwiMjAxNFwiLFxuICAgICAgcm91bmQgPT0gNiB+IFwiMjAxMlwiLFxuICAgICAgcm91bmQgPT0gNSB+IFwiMjAxMFwiLFxuICAgICAgcm91bmQgPT0gNCB+IFwiMjAwOFwiLFxuICAgICAgcm91bmQgPT0gMyB+IFwiMjAwNlwiLFxuICAgICAgcm91bmQgPT0gMiB+IFwiMjAwNFwiLFxuICAgICAgcm91bmQgPT0gMSB+IFwiMjAwMlwiLFxuICAgICAgVFJVRSB+IFwiXCIpICU+JSBcbiAgICAgIGFzLm51bWVyaWNcbiAgICApXG5ucm93KGVzc19wcmVwKVxuYGBgIn0= -->
+<pre class="r"><code>options(scipen = 999)
+ess &lt;- get(load(&quot;data/Rdata/ess_final.Rdata&quot;))
+ess_prep &lt;- ess 
+ess_prep &lt;- ess_prep %&gt;%
+  mutate(
+    id = 1:n(),
+    round_year = case_when(
+      round == 8 ~ &quot;2016&quot;,
+      round == 7 ~ &quot;2014&quot;,
+      round == 6 ~ &quot;2012&quot;,
+      round == 5 ~ &quot;2010&quot;,
+      round == 4 ~ &quot;2008&quot;,
+      round == 3 ~ &quot;2006&quot;,
+      round == 2 ~ &quot;2004&quot;,
+      round == 1 ~ &quot;2002&quot;,
+      TRUE ~ &quot;&quot;) %&gt;% 
+      as.numeric
+    )
+nrow(ess_prep)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDU3OTM3XG4ifQ== -->
+<pre><code>[1] 57937</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29sbmFtZXMoZXNzX3ByZXApXG5gYGAifQ== -->
+<pre class="r"><code>colnames(ess_prep)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-output-begin eyJkYXRhIjoiIFsxXSBcImlkXCIgICAgICAgICAgIFwicm91bmRcIiAgICAgICAgXCJpbmNvbWVcIiAgICAgICBcInBvbF9pbnRlclwiICAgIFwibHJzY2FsZVwiICAgICBcbiBbNl0gXCJyZWxcIiAgICAgICAgICBcImRlbW9cIiAgICAgICAgIFwiY2l0elwiICAgICAgICAgXCJlZHVcIiAgICAgICAgICBcImVkdV95ZWFyXCIgICAgXG5bMTFdIFwieWVhclwiICAgICAgICAgXCJnbmRyXCIgICAgICAgICBcInRydXN0X3BhcmxcIiAgIFwidHJ1c3RfbGVnXCIgICAgXCJ0cnVzdF9wb2xpY2VcIlxuWzE2XSBcInRydXN0X3BvbFwiICAgIFwidHJ1c3RfcGFydHlcIiAgXCJ0cnVzdF9ldVwiICAgICBcInRyc3R1blwiICAgICAgIFwic19saWZlXCIgICAgICBcblsyMV0gXCJzX2Vjb25cIiAgICAgICBcInNfZ292XCIgICAgICAgIFwic19kZW1cIiAgICAgICAgXCJzdGZlZHVcIiAgICAgICBcInN0ZmhsdGhcIiAgICAgXG5bMjZdIFwic3RmamJcIiAgICAgICAgXCJzdGZqYm90XCIgICAgICBcImltbV9lY29uXCIgICAgIFwiaW1tX3NhbWVcIiAgICAgXCJpbW1fZGlmZlwiICAgIFxuWzMxXSBcImltbV9wb29yXCIgICAgIFwidm90ZVwiICAgICAgICAgXCJ2b3RlX2lkXCIgICAgICBcImNvdW50cnlcIiAgICAgIFwiaXNvMlwiICAgICAgICBcblszNl0gXCJpc28zXCIgICAgICAgICBcInBhcnR5X2lkXCIgICAgIFwicm91bmRfeWVhclwiICBcbiJ9 -->
 <pre><code> [1] &quot;id&quot;           &quot;round&quot;        &quot;income&quot;       &quot;pol_inter&quot;    &quot;lrscale&quot;     
