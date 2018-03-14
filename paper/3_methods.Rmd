@@ -7,12 +7,20 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 ```
 
 ```{r, echo = F}
-pacman::p_load(dplyr, ggplot2, ggthemes, forcats)
-dt <- get(load("data/data_final.Rdata"))
+pacman::p_load(dplyr, ggplot2, ggthemes, forcats, tidyr, broom, stringr, kableExtra, knitr)
 ggplot2::theme_set(ggthemes::theme_few())
 ```
 
+```{r}
+dt <- get(load("data/data_final.Rdata"))
+ches_clust <- get(load("data/ches_clust.Rdata"))
+```
+
+
 ## Research Design
+
+* [summary stats](https://github.com/dcomtois/summarytools)
+
 
 ## Data Descriptions
 
@@ -21,7 +29,7 @@ Different data sources were merged to get a more feature rich dataset.
 * **European Social Survey** [@ess08]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
 * **Chapel Hill Expert Survey**. Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
 
-```{r, fig.cap="Number of Survey Responses by Country"}
+```{r, fig.cap="Number of Survey Responses by Country", fig.pos="ht!"}
 dt %>%
   group_by(country, round, round_year) %>%
   tally %>%
@@ -39,21 +47,129 @@ https://www.chesdata.eu/our-surveys/
 
 ... variables as well. 
 
+\clearpage
 
 ## Data Transformations
 
-### Ches Clustering
+### Model Based Clustering
+
+Voting for a right wing party is often approximated by left-right scales or is time-consumingly coded. This analysis adopts Cas Mudde’s clear minimalist definition of populism to identify core features that all subtypes of populism have in common. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes as well as their opposition to globalization. Subsequently, we propose to classify European populist parties along a progressive and traditionalist left-right dimension.
+
+This multidemsional classification problem is best approached by model-based hierarchical clustering [@mclust]. This toolset is already adopted in political science and praised for estimating meaningful clusters on high-dimensional data political science [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes the data generating process to be driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub population is seperatly estimated and summerized by a mixture of these subpopulations. Therefore the density tends to be centered at the multidimensional means ($\mu_k$) and increased by geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell the Gaussion Finite Normal Mixture model assumes a d-dimensional dataset $y_1, \dots , y_n$ to calculate G components with the likelihood
+
+$$\ell_{MIX} (\theta_1, \dots, \theta_G|y) = \prod^n_{i=1}\sum^G_{k=1} \tau_kf_k(y_i|\theta_k) $$
+
+
+where $f_k$ is the density of the $\theta_k$ mixture parameters, unlike traditional methods model-based clustering uses a soft assignment and calculates $\tau_k$ that represents the probability of a given observation belonging to the k component [@mclust_pol1]. Unsupervised machine learning algorithems are often critizised for introducing bias by hyperparameter settings. `mclust` adresses this by estimating a grid of different models and hyperparameter constellations. Bayesian Information Criterion (BIC) is provided to pick the most useful model [@mclust]. The metric is penalized for the complexity of the model to ensure Osam Razor. 
+
+
+All CHES party data is part of the clusterting even though it could not be present in the ESS micro data. Clustering involves two dimesnions and four indicators: 
+
+* Anti-Establishment
+    + antielite_salience 
+    + eu_position
+* Progressivism vs Traditionalism
+    + civlib_laworder
+    + galtan 
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/gg_mc_bic.pdf} 
+\caption{BICs for candidate mixture models for clustering the CHES party positioning data set. Following Fraley and Raftery (2010), the candidate component structures are labeled using: EII=spherical, equal volume; EEI=diagonal, equal volume and shape; EVI=diagonal, equal volume, varying shape; EEE=ellipsoidal, equal volume, shape, and orientation; VEV=ellipsoidal, equal shape; VII=spherical, unequal volume; VEI=diagonal, varying volume, equal shape; VVI=diagonal, varying volume and shape; EEV=ellipsoidal, equal volume and equal shape; VVV=ellipsoidal, varying volume, shape, and orientation.}
+\end{figure}
+
+The estimated grid models are represented by the following identifiers: EII, VII, EEI, VEI, EVI, VVI, EEE, EEV, VEV and VVV. The first Letter refers to volume, the second to shape and the third to orientation. E stands for “equal”, V for “variable” and I for “coordinate axes” [@kassambara2017practical].
+
+
+There is a clear indication of a four-component mixture with covariances having different shapes but the same volume and orientation (EVE) (VEV (ellipsoidal, equal shape)).
+
+Following Milligan and Cooper’s (1988) finding that standardization by dividing
+each variable by its range gives consistently superior recovery of the underlying cluster structure, all the variables are standardized by dividing by each variable’s range. PCA ... 
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/gg_mc_cluster.pdf} 
+\caption{BIC Model Selection and Uncertainty Boundaries}
+\end{figure}
+
+
+Table X displays the characteristics of each cluster through mean and standard deviation. 
+
 
 ```{r}
-dt %>%
-  ggplot(aes(income)) +
-  geom_bar() +
-  facet_wrap(~country) 
+cluster_means <- ches_clust %>%
+  group_by(cluster) %>%
+  select(antielite_salience, eu_position, civlib_laworder, galtan) %>% 
+  summarise_all(mean) %>%
+  mutate(cluster = NULL) %>%
+  mutate_all(round, 2) %>%
+  t
+
+cluster_sd <- ches_clust %>%
+  group_by(cluster) %>%
+  select(antielite_salience, eu_position, civlib_laworder, galtan) %>% 
+  summarise_all(sd) %>%
+  mutate(cluster = NULL) %>%
+  mutate_all(round, 2) %>%
+  t
+
+rn <- rownames(cluster_means)
+cluster_means <- cbind(rn, cluster_means) %>% as_tibble()
+cluster_sd <- cbind(rn, cluster_sd) %>% as_tibble() 
+  
+colnames(cluster_means) <- c("Var","Establishment", "Left Populist", "Right Populist")
+
+cluster_sd <- cluster_sd %>%
+  select(2:4) %>%
+  mutate_all(function(x) paste0("(", x, ")")) %>%
+  data.frame(Var = rn, ., stringsAsFactors = F)
+
+colnames(cluster_sd) <- c("Var","Establishment", "Left Populist", "Right Populist")
+
+cluster_all <- rbind(cluster_means, cluster_sd) %>%
+  arrange(Var) 
+cluster_all$Var[stringr::str_detect(cluster_all$Establishment, "^\\(")] <- ""
+
+cluster_all %>% 
+  knitr::kable(format = "latex", booktabs = T, caption = "Cluster means and standard deviations for populist indicators") %>%
+  column_spec(1, bold=T) %>%
+  kable_styling(font_size = 10) %>%
+  add_footnote(c("Note: Standard deviations are in parentheses"), notation = "number")
+```
+
+To validate the clusters lets inspect the party classification for three countries:
+
+```{r}
+ches_parties <- ches_clust %>%
+  mutate(party_name = paste0(party_name, " (", cname, ")")) %>%
+  filter(cname %in% c("ger", "fra")) %>%
+  select(party_name, cluster) %>%
+  group_by(cluster) %>%
+  summarise(Parties = paste(party_name, collapse = "; ")) %>%
+  ungroup %>%
+  rename(Cluster = cluster)
+
+ches_parties %>% 
+  knitr::kable(format = "latex", booktabs = T, caption = "Party Cluster Membership") %>%
+  column_spec(1, bold=T) %>%
+  column_spec(2, width = "25em") %>%
+  kable_styling(font_size = 10) %>%
+  add_footnote(c("Note: ..."), notation = "number")
 ```
 
 
-
+\clearpage
 
 ### EFA Scores
+
+
+
+
+
+
+
+
+
+
 
 

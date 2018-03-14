@@ -9,34 +9,148 @@ output: github_document
 
 ```{r}
 pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, cluster, factoextra, fpc)
+ggplot2::theme_set(ggthemes::theme_few())
 ```
 
 ## Data
 
 ```{r}
 ches <- get(load("data/Rdata/ches_final.Rdata"))
-```
-
-
-## Indeces 
-
-```{r}
-normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
-ches <- ches %>% 
+ches <- ches %>%
   mutate(populism = antielite_salience + corrupt_salience) %>% 
   mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
                                (1 - normalize_range(eu_position)))*100) %>% #+ 
                            #    (1 - range01(eu_budgets)))*100) %>% 
   mutate(liberalism = sociallifestyle + civlib_laworder + galtan) %>% 
   mutate(populism = normalize_range(populism)*100) %>% 
-  mutate(liberalism = normalize_range(liberalism)*100) #%>% 
-  #filter(year > 2009)
+  mutate(liberalism = normalize_range(liberalism)*100) 
 ```
+
+## CLustering
+
+### Model-Based
+
+The model parameters can be estimated using the Expectation-Maximization (EM) algorithm initialized by hierarchical model-based clustering. Each cluster k is centered at the means μk, with increased density for points near the mean.
+
+```{r cluster_prep}
+normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
+ches_data <- ches %>% 
+  drop_na(eu_position, antielite_salience, sociallifestyle, civlib_laworder, galtan) %>% 
+  as.data.frame()
+
+ches_cluster <- ches_data %>% 
+  select(antielite_salience, eu_position, civlib_laworder, galtan) %>% 
+  purrr::map_df(scale) 
+```
+
+
+
+```{r cluster_fit}
+library(mclust)
+mc <- Mclust(ches_cluster) # Model-based-clustering 
+summary(mc)
+```
+
+
+```{r cluster_label, fig.cap="Final Cluster Labels", eval = F}
+# Classification: plot showing the clustering 
+
+gg_mc_horse <- ches_data %>% 
+    mutate(var = factor(mc$classification, levels = 1:3)) %>%
+  ggplot(aes(liberalism, populism2)) + 
+  geom_point(aes(colour = var, shape = var)) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F, color = "black", linetype = "dashed")+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  scale_colour_grey() +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  ggtitle("Horse Curve", subtitle = "U-Shape Distribution")
+```
+
+
+```{r cluster_val}
+# BIC values used for choosing the number of clusters 
+gg_mc_bic <- fviz_mclust(mc, "BIC", palette = "grey")
+ggsave(gg_mc_bic, filename = "images/gg_mc_bic.pdf", width = 7, height = 4)
+
+gg_mc_cluster <- fviz_mclust(mc, "classification", geom = "point",
+pointsize = 1.5, palette = "grey")
+ggsave(gg_mc_cluster, filename = "images/gg_mc_cluster.pdf", width = 7, height = 4)
+
+gg_mc_uncert <- fviz_mclust(mc, "uncertainty", palette = "grey") +
+  theme(legend.position = "bottom")
+#gg_cluster <- gridExtra::grid.arrange(gg_mc_cluster, gg_mc_uncert, ncol = 2)
+#ggsave(gg_cluster, filename = "images/gg_cluster.pdf", width = 10, height = 4)
+```
+
+
+```{r}
+ches_clust <- ches_data %>% 
+    mutate(cluster = case_when(
+      mc$classification == 1 ~ "Establishment",
+      mc$classification == 2 ~ "Left Populist",
+      mc$classification == 3 ~ "Right Populist"
+    )
+  ) %>%
+  select(party_id, cluster) %>% 
+  right_join(ches)
+
+#save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
+```
+
+
+
+
+
+
+```{r}
+cluster_means <- ches_clust %>%
+  group_by(cluster) %>%
+  summarise_all(mean) %>%
+  mutate(cluster = NULL) %>%
+  t
+rn <- rownames(cluster_means)
+cluster_means <- cbind(rn, cluster_means) %>% as_tibble()
+colnames(cluster_means) <- c("","Cluster 1", "Cluster 2", "Cluster 3")
+
+library(kableExtra)
+cluster_means %>% 
+  knitr::kable(format = "latex", booktabs = T, linesep = "", caption = "Deliberative Quality Index (2003)") %>%
+  column_spec(1, width = "7em", bold=T) %>%
+  #column_spec(2, width = "13em") %>%
+  #column_spec(3, width = "17em") %>%
+  #collapse_rows(columns = 1:3) %>%
+  kable_styling(font_size = 10, latex_options = "hold_position") %>%
+  add_footnote(c("Steenbergen et al 2003: 27-30"), notation = "number")
+```
+
+
+
+```{r}
+devtools::install_github("ricardo-bion/ggradar", 
+                          dependencies=TRUE)
+
+library(ggradar)
+ches_data %>% 
+  select(antielite_salience, eu_position, civlib_laworder, galtan)
+
+mtcars %>%
+     rownames_to_column( var = "group" ) %>%
+     mutate_at(vars(-group),funs(rescale)) %>%
+     tail(4) %>% select(1:10) -> mtcars_radar
+
+ggradar(mtcars_radar) 
+```
+
+
+
+
+
 
 # Horse-shoe
 
 ```{r}
-ches %>% 
+ches_data %>% 
   ggplot(aes(liberalism, populism, colour = eu_position)) + 
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
@@ -360,21 +474,27 @@ library(mclust)
 mc <- Mclust(ches_cluster) # Model-based-clustering 
 summary(mc)
 ```
-
-
 ```{r}
-# BIC values used for choosing the number of clusters 
-fviz_mclust(mc, "BIC", palette = "jco")
 # Classification: plot showing the clustering 
 fviz_mclust(mc, "classification", geom = "point",
-pointsize = 1.5, palette = "jco") # Classification uncertainty
-fviz_mclust(mc, "uncertainty", palette = "jco")
+pointsize = 1.5, palette = "grey") # Classification uncertainty
+```
+
+
+```{r cluster_val, fig.width=12, fig.width=5, fig.cap="Internal Cluster Validation and Uncertainty"}
+# BIC values used for choosing the number of clusters 
+gg_mc_bic <- fviz_mclust(mc, "BIC", palette = "grey")+
+   theme(legend.position = "none")
+gg_mc_uncert <- fviz_mclust(mc, "uncertainty", palette = "grey") +
+   theme(legend.position = "none")
+gg_val <- gridExtra::grid.arrange(gg_mc_bic, gg_mc_uncert, ncol = 2)
+ggsave(gg_val, filename = "images/gg_val.png", width = 12, height = 5)
 ```
 
 
 ```{r}
 ches %>% 
-  ggplot(aes(liberalism, populism, colour = mc$classification)) + 
+  ggplot(aes(liberalism, populism2, colour = mc$classification)) + 
   geom_point() +
   #geom_smooth(method = "lm", formula = y ~ poly(x, 2))+
   #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +

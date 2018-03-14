@@ -9,7 +9,7 @@ output:
      before_body: imports/title_page.tex
      #after_body: appendix.tex
 documentclass: article
-bibliography: efficacy.bib
+bibliography: [efficacy.bib, methods.bib]
 csl: imports/university-of-stuttgart-sowi-standards.csl
 link-citations: yes
 ---
@@ -25,6 +25,7 @@ link-citations: yes
 <!-- % BEGINN-->
 \clearpage
 \setstretch{1.5}
+
 
 ```{r setup_1, include = F}
 knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
