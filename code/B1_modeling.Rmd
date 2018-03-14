@@ -1,0 +1,110 @@
+---
+title: "ESS Statistical Models"
+subtitle: "Factor Scores"
+author: "Rebecca & Simon "
+output: html_notebook
+---
+
+## Packages
+
+```{r}
+pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, cluster, factoextra, fpc)
+```
+
+## Data
+
+```{r}
+options(scipen = 999)
+ess <- get(load("data/Rdata/ess_score.Rdata"))
+ches <- get(load("data/Rdata/ches_clust.Rdata"))
+
+ess_prep <- ess %>%
+  mutate(
+    id = 1:n(),
+    round_year = case_when(
+      round == 8 ~ "2016",
+      round == 7 ~ "2014",
+      round == 6 ~ "2012",
+      round == 5 ~ "2010",
+      round == 4 ~ "2008",
+      round == 3 ~ "2006",
+      round == 2 ~ "2004",
+      round == 1 ~ "2002",
+      TRUE ~ "") %>% 
+      as.numeric
+    )
+
+ches_prep <- ches %>%
+  select(party_id, vote_id, k3, lrgen)
+```
+
+```{r}
+data_final <- ess_prep %>% 
+  left_join(ches_prep, by = c("vote_id", "party_id")) 
+
+data_final <- data_final %>%
+  mutate(vote_right = ifelse(k3 == 2, 1, 0)) %>%
+  mutate(lr_dff = abs(lrscale - lrgen))
+  
+#save(data_final, file = "data/Rdata/data_final.Rdata")
+
+data_final %>%
+  dplyr::select(lr_dff, lrgen, lrscale) %>%
+  summary
+
+table(data_final$vote_right)
+```
+
+
+# Modeling
+
+
+```{r}
+library(arm)
+#data_final$trust_scores
+ml1 <- glmer(vote_right ~ trust_scores + (1|country), data = data_final, family = binomial(link = "logit"))
+display(ml1)
+# sjp.glmer(ml1)
+# marginal effects
+sjp.glmer(ml1, type = "eff", show.ci = TRUE)
+```
+
+
+## brms
+
+```{r}
+library(brms)
+fit <- brm(vote_right ~ trust_scores + (1|country), data = data_final, family = binomial("probit"))
+summary(fit, waic = TRUE) 
+plot(fit)
+```
+
+
+
+
+
+
+```{r}
+summary(data_final)
+glm2 <- glmer(vote_right ~ trust_scores + gndr + rel +(1|country), data = data_final, family = binomial(link = "logit"))
+display(glm2)
+
+library(sjPlot)
+ggg <- sjp.glmer(glm2, type = "eff")
+ggg
+```
+
+```{r}
+ml1 <- lmer(lr_dff ~ trust_scores + gndr + (1|country), data = data_final)
+display(ml1)
+```
+
+
+```{r}
+library(sjPlot)
+plot_model(ml1)
+```
+
+
+
+

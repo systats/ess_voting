@@ -1,0 +1,35 @@
+---
+output: pdf_document
+---
+
+## State of Research
+
+In recent years, populism has attracted considerable interest from social scientists and political commentators [@mudde2004populist; @panizza2005populism; @berezin2013normalization]. Indeed, the term ‘populism’ is both widely used and contested [@roberts2006populism; @barr2009populists]. It has been defined based on political, economic, social, and discursive features and analyzed from countless theoretical perspectives -including democratic and modernization theory, social movement theory, party politics and political psychology [@canovan2002taking; @postel2007populist; @goodliffe2012resurgence; @acemoglu2013political]. It is worthwhile to reassess hypotheses on populist politics as “[...] populism does leave an imprint on important political phenomena” [@hawkins2010venezuela, p. 49]. Populist politics can reshape repertoires of political mobilization, especially in the forms of mass social movements and socially engaged party organizations [@hawkins2010venezuela; @jansen2011populist]. The ability of populist politics to galvanize new forms of political engagement is especially important in an era of decline in formal political participation such as turnout and party membership @skocpol2016tea. At the same time, in unconsolidated democracies populism may erode democratic institutions and usher competitive authoritarian regimes [@levistky2012populism].
+
+
+## Explaining Right-Wing Participation 
+
+Zunächst Political participation beleuchten konzepte usw....literatur vetter
+
+
+Voting is only one form of political participation. There are many other ways in which citizens can get involved in the political process. Once this is recognized, the challenge is to clarify what we mean by political participation, what activities are and are not covered by the concept. [@brady1995beyond, p. 38] provide the standard definition of political participation. For them, it refers to *"activity that has the intent or effect of influencing government action - either directly by affecting the making or implementation of public policy or indirectly by influencing the selection of people who make those policies."* They also specify that they focus on voluntary activity that is, not obligatory and unpaid. 3 In practice, this amounts to, beyond electoral activity (voting and campaigning), contacting government officials, being active in groups that attempt to influence governments, and being involved in protests and demonstrations [@blais2010political].
+
+Populists argue that they despise the political system of representative politics itself [@taggart2000populism].
+Moreover, populists are characterised being against the political establishment, the economic, media and cultural elite. Each of them are portrayed as one homogeneous corrupt group acting against the ‘general will’ of citizens [@mudde2017populism]. Therefore populism tends to develop an inner group working against the corrupt others.  As Mudde and Kaltwasser elaborate furthermore, *“This anti-elitist impetus goes together with a critique of institutions such as political parties, big organizations, and bureaucracies, which are accused of distorting the ‘truthful’ links between populist leaders and ‘the common people’”* [@mudde2017populism]. It is emphasized that voters of populist parties do not trust the political system they live in, neither are they satisfied with representative democracy in their country. Populism may be broadly defined as *“a general protest against the checks and balances introduced to prevent ‘the people’s’ direct rule”* [@pelinka2013right]. Summarizing, we can observe the great accordance of scholars, that populist electorate is not supporting the political system and wants to rebel against the established structures.
+
+
+## Voting Right-Wing Parties
+
+Recent events showed that numerous citizens are hesitant to further European integration and in the political arena, numerous parties air euro-criticism [@de2009taking]. On the radical right, parties successfully mobilize national identity considerations against the European Union [@hooghe2005calculation], @lubbers2008regarding]. In the 2009 European Parliamentary elections, especially radical right-wing parties mobilized anti-EU sentiment and gained seats in the European parliament. These parties see the foundation of a political European Union as a threat to the sovereignty of the nation state: nearly all radical right-wing parties agree that the EU is bad and should be either reformed fundamentally or abolished [@mudde2007populist]. Yet, the relationship between euro-scepticism and radical right-wing voting behaviour has received little empirical attention in previous studies. @ivarsflaten2005vulnerable showed that euro-scepticism is an important determinant for radical right-wing support in France and Denmark. @van2005some also found a positive relationship between anti-EU sentiments and radical right-wing voting in France. Using data from 2002, @lubbers2007euro focused on the role of euro-scepticism for radical right-wing support in national elections in 13 countries. They found that voting for radical right-wing parties can partly be explained by euro-scepticism, over and beyond other relevant socio-political attitudes. Also, @arzheimer2009christian found evidence for the relevance of euro-scepticism, although he was not able to test its effect next to the major predictor of radical right-wing voting: the unfavourable attitudes towards migrants.
+
+
+
+## The Protest Vote
+
+This approach builds on a widely accepted idea that radical right-wing parties gain from political protest. From this point of view, voters for these parties are not attracted by their anti-immigrant stances, but express predominantly political dissatisfaction [@mudde2007populist]. Although several studies emphasize that voters not only cast a radical right-wing vote based on political dissatisfaction, the protest propos- ition explains at least some of the variation in radical right-wing voting [@ivarsflaten2005vulnerable]. We expect people who perceive their socio-economic situation as deprived to oppose established parties. They will be dissatisfied politically, feel more powerless, and are consequently more likely to cast a radical right-wing vote, since parties on the radical right claim to listen to the dissatisfied and oppose government decisions. People who perceive deprivation in their present socio-economic situation are more likely to vote for a radical right-wing party, as they are more dissatisfied politically [@werts2013euro].
+
+
+## Protest
+
+## Political Efficacy
+

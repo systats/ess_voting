@@ -1,0 +1,64 @@
+---
+geometry: "left=2.5cm,right=4cm,top=2.5cm,bottom=2cm"
+output: 
+  pdf_document:
+    toc: false
+    number_sections: yes
+    includes:
+     in_header: imports/header.tex
+     before_body: imports/title_page.tex
+     #after_body: appendix.tex
+documentclass: article
+bibliography: [efficacy.bib, methods.bib]
+csl: imports/university-of-stuttgart-sowi-standards.csl
+link-citations: yes
+---
+
+<!-- % LIST OF CONTENTS-->
+\tableofcontents
+
+<!-- % LIST OF TABLES & FIGURES-->
+\newpage
+\listoftables
+\listoffigures
+
+<!-- % BEGINN-->
+\clearpage
+\setstretch{1.5}
+
+
+```{r setup_1, include = F}
+knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
+```
+
+# Introduction
+
+```{r child = '1_intro.Rmd'}
+```
+
+# Theory
+
+```{r child = '2_theory.Rmd'}
+```
+
+# Methods
+
+```{r child = '3_methods.Rmd'}
+```
+
+# Analysis
+
+```{r child = '4_analysis.Rmd'}
+```
+
+# Conclusions
+
+```{r child = '5_conclusions.Rmd'}
+```
+
+
+\setstretch{1}
+
+\newpage
+
+# References

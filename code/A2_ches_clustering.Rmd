@@ -1,0 +1,563 @@
+---
+title: "CHES Clustering"
+subtitle: "KNN + Treebased clustering methods"
+author: "Rebecca & Simon "
+output: github_document
+---
+
+## Packages
+
+```{r}
+pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, cluster, factoextra, fpc)
+ggplot2::theme_set(ggthemes::theme_few())
+```
+
+## Data
+
+```{r}
+ches <- get(load("data/Rdata/ches_final.Rdata"))
+ches <- ches %>%
+  mutate(populism = antielite_salience + corrupt_salience) %>% 
+  mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
+                               (1 - normalize_range(eu_position)))*100) %>% #+ 
+                           #    (1 - range01(eu_budgets)))*100) %>% 
+  mutate(liberalism = sociallifestyle + civlib_laworder + galtan) %>% 
+  mutate(populism = normalize_range(populism)*100) %>% 
+  mutate(liberalism = normalize_range(liberalism)*100) 
+```
+
+## CLustering
+
+### Model-Based
+
+The model parameters can be estimated using the Expectation-Maximization (EM) algorithm initialized by hierarchical model-based clustering. Each cluster k is centered at the means μk, with increased density for points near the mean.
+
+```{r cluster_prep}
+normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
+ches_data <- ches %>% 
+  drop_na(eu_position, antielite_salience, sociallifestyle, civlib_laworder, galtan) %>% 
+  as.data.frame()
+
+ches_cluster <- ches_data %>% 
+  select(antielite_salience, eu_position, civlib_laworder, galtan) %>% 
+  purrr::map_df(scale) 
+```
+
+
+
+```{r cluster_fit}
+library(mclust)
+mc <- Mclust(ches_cluster) # Model-based-clustering 
+summary(mc)
+```
+
+
+```{r cluster_label, fig.cap="Final Cluster Labels", eval = F}
+# Classification: plot showing the clustering 
+
+gg_mc_horse <- ches_data %>% 
+    mutate(var = factor(mc$classification, levels = 1:3)) %>%
+  ggplot(aes(liberalism, populism2)) + 
+  geom_point(aes(colour = var, shape = var)) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F, color = "black", linetype = "dashed")+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  scale_colour_grey() +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  ggtitle("Horse Curve", subtitle = "U-Shape Distribution")
+```
+
+
+```{r cluster_val}
+# BIC values used for choosing the number of clusters 
+gg_mc_bic <- fviz_mclust(mc, "BIC", palette = "grey")
+ggsave(gg_mc_bic, filename = "images/gg_mc_bic.pdf", width = 7, height = 4)
+
+gg_mc_cluster <- fviz_mclust(mc, "classification", geom = "point",
+pointsize = 1.5, palette = "grey")
+ggsave(gg_mc_cluster, filename = "images/gg_mc_cluster.pdf", width = 7, height = 4)
+
+gg_mc_uncert <- fviz_mclust(mc, "uncertainty", palette = "grey") +
+  theme(legend.position = "bottom")
+#gg_cluster <- gridExtra::grid.arrange(gg_mc_cluster, gg_mc_uncert, ncol = 2)
+#ggsave(gg_cluster, filename = "images/gg_cluster.pdf", width = 10, height = 4)
+```
+
+
+```{r}
+ches_clust <- ches_data %>% 
+    mutate(cluster = case_when(
+      mc$classification == 1 ~ "Establishment",
+      mc$classification == 2 ~ "Left Populist",
+      mc$classification == 3 ~ "Right Populist"
+    )
+  ) %>%
+  select(party_id, cluster) %>% 
+  right_join(ches)
+
+#save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
+```
+
+
+
+
+
+
+```{r}
+cluster_means <- ches_clust %>%
+  group_by(cluster) %>%
+  summarise_all(mean) %>%
+  mutate(cluster = NULL) %>%
+  t
+rn <- rownames(cluster_means)
+cluster_means <- cbind(rn, cluster_means) %>% as_tibble()
+colnames(cluster_means) <- c("","Cluster 1", "Cluster 2", "Cluster 3")
+
+library(kableExtra)
+cluster_means %>% 
+  knitr::kable(format = "latex", booktabs = T, linesep = "", caption = "Deliberative Quality Index (2003)") %>%
+  column_spec(1, width = "7em", bold=T) %>%
+  #column_spec(2, width = "13em") %>%
+  #column_spec(3, width = "17em") %>%
+  #collapse_rows(columns = 1:3) %>%
+  kable_styling(font_size = 10, latex_options = "hold_position") %>%
+  add_footnote(c("Steenbergen et al 2003: 27-30"), notation = "number")
+```
+
+
+
+```{r}
+devtools::install_github("ricardo-bion/ggradar", 
+                          dependencies=TRUE)
+
+library(ggradar)
+ches_data %>% 
+  select(antielite_salience, eu_position, civlib_laworder, galtan)
+
+mtcars %>%
+     rownames_to_column( var = "group" ) %>%
+     mutate_at(vars(-group),funs(rescale)) %>%
+     tail(4) %>% select(1:10) -> mtcars_radar
+
+ggradar(mtcars_radar) 
+```
+
+
+
+
+
+
+# Horse-shoe
+
+```{r}
+ches_data %>% 
+  ggplot(aes(liberalism, populism, colour = eu_position)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  ggthemes::theme_hc() +
+  viridis::scale_color_viridis()
+```
+
+
+
+## Clustering
+
+```{r}
+set.seed(2018)
+ches_cluster_data <- ches %>% 
+  select(party_name, vote_id, liberalism, populism2) %>% 
+  drop_na(liberalism, populism2) %>% 
+  as.data.frame()
+
+ches_cluster <- ches_cluster_data %>% 
+  select(-party_name, -vote_id) %>% 
+  purrr::map_df(scale) 
+```
+
+```{r, eval = F}
+distance <- get_dist(ches_cluster)
+fviz_dist(distance, 
+ gradient = list(low = "#00AFBB", 
+                 mid = "white",
+                 high = "#FC4E07"))
+```
+
+`kmeans()` function returns a list of components, including:
+
+* `cluster`: A vector of integers (from 1:k) indicating the cluster to which each point is allocated
+* `centers`: A matrix of cluster centers (clustqer means)
+* `totss`: The total sum of squares (TSS), i.e (xi ≠ x ̄)2. TSS measures the total variance in the data.
+* `withinss`: Vector of within-cluster sum of squares, one component per cluster
+* `tot.withinss`: Total within-cluster sum of squares, i.e. sum(withinss)
+* `betweenss`: The between-cluster sum of squares, i.e. totss ≠ tot.withinss
+* `size`: The number of observations in each cluster
+
+```{r}
+k4 <- kmeans(ches_cluster, centers = 4, nstart = 25, iter.max = 10)
+ggf <- fviz_cluster(k4, data = ches_cluster, show.clust.cent = T, text = "vote_id")
+ggf + theme_gdocs()
+```
+
+```{r}
+ches_cluster_data$k4cluster <- k4$cluster
+
+ches_clust <- ches %>%
+  left_join(ches_cluster_data)
+
+# save(ches_clust, file = "data/Rdata/ches_clust.Rdata")
+```
+
+```{r, fig.width=10}
+glimpse(ches_clust)
+
+ches_trick <- ches_clust %>% mutate(k4cluster = NULL)
+ches_clust %>% 
+  mutate(k4cluster = ifelse(k4cluster %in% c(1,3), 3, k4cluster)) %>%
+  ggplot(aes(liberalism, populism2, colour = k4cluster)) + 
+  geom_point(data = ches_trick, color = "gray") +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = F)+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  ggthemes::theme_hc() +
+  viridis::scale_color_viridis() +
+  facet_wrap(~k4cluster, ncol = 4) +
+  theme(legend.position = "none")
+```
+
+
+
+
+```{r}
+fviz_cluster(
+  k3, 
+  data = ches_cluster,
+  palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+  ellipse.type = "euclid", # Concentration ellipse star.plot = TRUE, # Add segments from centroids to items repel = TRUE, # Avoid label overplotting (slow)
+  ggtheme = theme_minimal()
+)
+```
+
+
+
+```{r}
+# Elbow method
+fviz_nbclust(ches_cluster, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2) +
+  labs(subtitle = "Elbow method") + 
+  theme_gdocs()
+
+
+# Silhouette method
+fviz_nbclust(ches_cluster, kmeans, method = "silhouette") +
+  labs(subtitle = "Silhouette method") +
+  theme_gdocs()
+
+# Gap statistic
+# nboot = 50 to keep the function speedy.
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+fviz_nbclust(ches_cluster, kmeans, nstart = 25, method = "gap_stat", nboot = 50) + 
+  labs(subtitle = "Gap statistic method") +
+  theme_gdocs()
+```
+
+According to these observations, it’s possible to define k = 4 as the optimal number of clusters in the data.
+
+
+2 dimensions do not need pca
+
+```{r, eval = F}
+library(purrr)
+res <- purrr::map(2:8, ~ kmeans(ches_cluster, .))
+library(ggfortify)
+autoplot(res, data = ches_cluster, ncol = 3) + theme(legend.position = "none")
+```
+
+normal scatterplots
+
+```{r}
+k_cluster_dat <- 2:8 %>%
+  purrr::map(~ kmeans(ches_cluster, .x)$cluster) %>%
+  reduce(cbind) %>%
+  as_tibble() %>%
+  set_names(paste0("k", 2:8)) %>%
+  cbind(ches_cluster, .)
+
+k_cluster_dat %>%
+  gather("k", "value", -liberalism, -populism2) %>%
+  ggplot(aes(liberalism, populism2, colour = as.factor(value))) +
+  geom_point() +
+  facet_wrap(~k) +
+  scale_colour_viridis(discrete = T, direction = -1) + 
+  theme_hc() +
+  theme(legend.position = "none")
+```
+
+
+
+```{r}
+cbind(ches_cluster, cluster = k3$cluster) %>%
+  group_by(cluster) %>%
+  summarise_all(.funs = list(m = mean, s = sd))
+```
+
+
+## K-Medoids
+
+The most common k-medoids clustering methods is the PAM algorithm (Partitioning Around Medoids, Kaufman & Rousseeuw, 1990).
+
+```{r}
+res_pam <- pam(ches_cluster, 3, metric = "euclidean", stand = FALSE)
+res_pam$clustering
+
+fviz_nbclust(ches_cluster, pam, method = "silhouette")+
+theme_hc()
+```
+
+```{r}
+km_cluster_dat <- 2:8 %>%
+  purrr::map(~ pam(ches_cluster, k = ., metric = "euclidean", stand = FALSE)$clustering) %>%
+  reduce(cbind) %>%
+  as_tibble() %>%
+  set_names(paste0("k", 2:8)) %>%
+  cbind(ches_cluster, .)
+
+gg_km <- km_cluster_dat %>%
+  gather("k", "value", -liberalism, -populism2) %>%
+  ggplot(aes(liberalism, populism2, colour = as.factor(value))) +
+  geom_point() +
+  facet_wrap(~k) +
+  scale_colour_viridis(discrete = T, direction = -1) + 
+  theme_hc() +
+  theme(legend.position = "none")
+gg_km
+```
+
+```{r}
+res_pam$medoids
+```
+
+```{r}
+cbind(ches_cluster, cluster = res_pam$clustering) %>%
+  group_by(cluster) %>%
+  summarise_all(.funs = list(m = median))
+```
+
+```{r}
+fviz_nbclust(ches_cluster, clara, method = "silhouette")+
+theme_classic()
+```
+
+# HCA
+
+```{r}
+res.dist <- dist(ches_cluster, method = "euclidean")
+res.hc <- hclust(d = res.dist, method = "ward.D2")
+fviz_dend(res.hc, cex = 0.5)
+```
+
+```{r}
+# Cut tree into 3 groups
+grp <- cutree(res.hc, k = 3)
+
+fviz_dend(
+  res.hc, 
+  k = 3, # Cut in four groups
+  cex = 0.5, # label size
+  k_colors = c("#2E9FDF", "#00AFBB", "#E7B800"),
+  color_labels_by_k = TRUE, # color labels by groups
+  rect = TRUE # Add rectangle around groups
+)
+```
+
+```{r, fig.height=10, fig.width=10}
+fviz_dend(
+  res.hc, 
+  cex = 1, 
+  k = 3,
+  k_colors = "jco", 
+  type = "circular"
+)
+```
+
+```{r}
+require("igraph")
+ggrep <- fviz_dend(res.hc, k = 3, k_colors = "jco",
+          type = "phylogenic", repel = TRUE)
+ggrep
+```
+
+```{r}
+fviz_dend(res.hc, k = 3, # Cut in four groups
+          k_colors = "jco",
+          type = "phylogenic", 
+          repel = TRUE,
+          phylo_layout = "layout_with_drl")
+```
+
+
+```{r}
+fviz_dend(res.hc, k = 3, # Cut in four groups
+          k_colors = "jco",
+          type = "phylogenic", 
+          repel = TRUE,
+          phylo_layout = "layout_as_tree")
+```
+
+
+```{r}
+fviz_dend(res.hc, k = 3, # Cut in four groups
+          k_colors = "jco",
+          type = "phylogenic", 
+          repel = TRUE,
+          phylo_layout = "layout.gem")
+```
+
+
+```{r}
+fviz_dend(res.hc, k = 3, # Cut in four groups
+          k_colors = "jco",
+          type = "phylogenic", 
+          repel = TRUE,
+          phylo_layout = "layout.mds")
+```
+
+
+```{r}
+gg10 <- fviz_dend(res.hc, k = 3, # Cut in four groups
+          k_colors = "jco",
+          type = "phylogenic", 
+          repel = TRUE,
+          phylo_layout = "layout_with_lgl")
+gg10
+```
+
+
+## Compare clustering algorithms in R
+
+```{r}
+library(clValid)
+# Iris data set:
+# - Remove Species column and scale df <- scale(iris[, -5])
+# Compute clValid
+clmethods <- c("hierarchical","kmeans","pam") 
+intern <- clValid(
+  ches_cluster %>% as.matrix, 
+  nClust = 2:8,
+  clMethods = clmethods, 
+  validation = "internal"
+) 
+summary(intern)
+```
+
+```{r, eval = F}
+# Stability measures
+clmethods <- c("hierarchical","kmeans","pam")
+stab <- clValid(
+  ches_cluster %>% as.matrix,
+  nClust = 2:6, 
+  clMethods = clmethods,
+  validation = "stability"
+) # Display only optimal Scores
+optimalScores(stab)
+```
+
+
+## Model-Based Clustering
+
+The model parameters can be estimated using the Expectation-Maximization (EM) algorithm initialized by hierarchical model-based clustering. Each cluster k is centered at the means μk, with increased density for points near the mean.
+
+
+```{r}
+library(mclust)
+mc <- Mclust(ches_cluster) # Model-based-clustering 
+summary(mc)
+```
+```{r}
+# Classification: plot showing the clustering 
+fviz_mclust(mc, "classification", geom = "point",
+pointsize = 1.5, palette = "grey") # Classification uncertainty
+```
+
+
+```{r cluster_val, fig.width=12, fig.width=5, fig.cap="Internal Cluster Validation and Uncertainty"}
+# BIC values used for choosing the number of clusters 
+gg_mc_bic <- fviz_mclust(mc, "BIC", palette = "grey")+
+   theme(legend.position = "none")
+gg_mc_uncert <- fviz_mclust(mc, "uncertainty", palette = "grey") +
+   theme(legend.position = "none")
+gg_val <- gridExtra::grid.arrange(gg_mc_bic, gg_mc_uncert, ncol = 2)
+ggsave(gg_val, filename = "images/gg_val.png", width = 12, height = 5)
+```
+
+
+```{r}
+ches %>% 
+  ggplot(aes(liberalism, populism2, colour = mc$classification)) + 
+  geom_point() +
+  #geom_smooth(method = "lm", formula = y ~ poly(x, 2))+
+  #geom_text_repel(aes(liberalism, populism, label = party_cntry)) +
+  ggthemes::theme_hc() +
+  viridis::scale_color_viridis() + 
+  geom_density2d(alpha = .7, color = "gray") # Add 2D density 
+```
+
+
+
+```{r, eval = F}
+library(highcharter)
+
+df1 <- tibble(vote = paste(ches_cluster_data$party_name, ches_cluster_data$vote_id, sep = " "), cluster = k3$cluster, x = as.vector(ches_cluster$liberalism), y = as.vector(ches_cluster$populism2)) %>%
+  filter(stringr::str_detect(vote, "DE_"))
+hchart(df1, hcaes(x = x, y = y, name = vote, color = cluster), type = 'scatter') %>%
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_tooltip(
+    formatter = JS("function(){
+                    return ('Party: <strong>' + this.point.vote + '</strong><br> X: ' + this.x + ' <br> Y: ' + this.y + ' <br>')
+                  }")) %>%
+  hc_chart(zoomType = "xy")
+```
+
+## World Map
+
+```{r}
+library(ggplot2)
+world <- map_data("world")
+world$iso3 <- countrycode::countrycode(world$region, "country.name", "iso3c")
+
+ches <- ches %>%
+  mutate(country = stringr::str_replace(vote_id, "_.*?$", "")) %>%
+  mutate(iso3 = countrycode::countrycode(country, "iso2c", "iso3c"))
+world$value <- ifelse(world$iso3 %in% unique(ches$iso3), "yes", "no")
+# table(world$value)
+# world %>% 
+#   ggplot(aes(long, lat, group = group)) + 
+#     geom_polygon(fill='grey')
+
+ggmap <- world %>% 
+  ggplot(aes(long, lat, group = group, fill = value)) + 
+  geom_polygon() +
+  #xlim(-20,50) + 
+  #ylim(30,80) +
+  scale_fill_manual("selected", values = c("gray90", "blue")) +
+  theme_map()
+ggmap
+```
+
+
+
+```{r, eval = F}
+#ess_clean <- ess_sub  %>% 
+  # mutate(eu_member =
+  #          recode_factor(cntry,
+  #               DE = 1958, BE = 1958, FR = 1958, NL = 1958, IE = 1973,
+  #               GB = 1973, FI = 1995, AT = 1995, SE = 1995, EE = 2004,
+  #               PL = 2004, SI = 2004, CZ = 2004, CH = 0, IL = 0,
+  #               IS = 0, NO = 0, RU = 0
+  #             )
+  #       ) %>%
+  # mutate(post_com = ifelse(region %in% c("Estonia", "Poland", "Slovenia", "Czech Republic", "Russian Federation"), "Post C", "West"))
+```
+
+
