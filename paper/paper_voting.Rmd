@@ -36,26 +36,31 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 ```{r child = '1_intro.Rmd'}
 ```
 
+# State of Research
+
+```{r child = '2_state.Rmd'}
+```
+
 # Theory
 
-```{r child = '2_theory.Rmd'}
+```{r child = '3_theory.Rmd'}
 ```
 
 # Methods
 
-```{r child = '3_methods.Rmd'}
+```{r child = '4_methods.Rmd'}
 ```
 
 \clearpage
 
 # Analysis
 
-```{r child = '4_analysis.Rmd'}
+```{r child = '5_analysis.Rmd'}
 ```
 
 # Conclusions
 
-```{r child = '5_conclusions.Rmd'}
+```{r child = '6_conclusions.Rmd'}
 ```
 
 
