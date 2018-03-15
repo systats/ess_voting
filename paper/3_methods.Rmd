@@ -24,12 +24,14 @@ ches_clust <- get(load("data/ches_clust.Rdata"))
 
 ## Data Descriptions
 
-Different data sources were merged to get a more feature rich dataset. 
+Different data sources data set were used:
 
 * **European Social Survey** [@ess08]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
 * **Chapel Hill Expert Survey**. Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
 
-```{r, fig.cap="Number of Survey Responses by Country", fig.pos="ht!"}
+The dependent variable from our final model is the populism cluster infered from Ches party data that has been matched and merged to the ESS micro data on voting a particular party. Variable Description ... 
+
+```{r, eval = F, fig.cap="Number of Survey Responses by Country", fig.pos="ht!"}
 dt %>%
   group_by(country, round, round_year) %>%
   tally %>%
@@ -45,37 +47,34 @@ dt %>%
 
 https://www.chesdata.eu/our-surveys/
 
-... variables as well. 
-
 \clearpage
 
-## Data Transformations
+## Model Based Clustering
 
-### Model Based Clustering
+Voting for a right wing party is often approximated by left-right scales or is time-intensiv coded. This analysis adopts Cas Mudde’s clear minimalist definition of populism to identify core features that all sub types of populism have in common. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes as well as their opposition to globalization. Subsequently, we propose to classify European populist parties along a progressive and traditionalist left-right dimension.
 
-Voting for a right wing party is often approximated by left-right scales or is time-consumingly coded. This analysis adopts Cas Mudde’s clear minimalist definition of populism to identify core features that all subtypes of populism have in common. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes as well as their opposition to globalization. Subsequently, we propose to classify European populist parties along a progressive and traditionalist left-right dimension.
-
-This multidemsional classification problem is best approached by model-based hierarchical clustering [@mclust]. This toolset is already adopted in political science and praised for estimating meaningful clusters on high-dimensional data political science [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes the data generating process to be driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub population is seperatly estimated and summerized by a mixture of these subpopulations. Therefore the density tends to be centered at the multidimensional means ($\mu_k$) and increased by geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell the Gaussion Finite Normal Mixture model assumes a d-dimensional dataset $y_1, \dots , y_n$ to calculate G components with the likelihood
+This multidimensional classification problem is best approached by model-based hierarchical clustering [@mclust]. This tool set is already adopted in political science and praised for estimating meaningful clusters on high-dimensional data political science [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes the data generating process to be driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub population is separately estimated and summarized by a mixture of these sub populations. Therefore the density tends to be centered at the multidimensional means ($\mu_k$) and increased by geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell the Gaussian Finite Normal Mixture model assumes a d-dimensional data set $y_1, \dots , y_n$ to calculate G components with the likelihood
 
 $$\ell_{MIX} (\theta_1, \dots, \theta_G|y) = \prod^n_{i=1}\sum^G_{k=1} \tau_kf_k(y_i|\theta_k) $$
 
 
-where $f_k$ is the density of the $\theta_k$ mixture parameters, unlike traditional methods model-based clustering uses a soft assignment and calculates $\tau_k$ that represents the probability of a given observation belonging to the k component [@mclust_pol1]. Unsupervised machine learning algorithems are often critizised for introducing bias by hyperparameter settings. `mclust` adresses this by estimating a grid of different models and hyperparameter constellations. Bayesian Information Criterion (BIC) is provided to pick the most useful model [@mclust]. The metric is penalized for the complexity of the model to ensure Osam Razor. 
+where $f_k$ is the density of the $\theta_k$ mixture parameters, unlike traditional methods model-based clustering uses a soft assignment and calculates $\tau_k$ that represents the probability of a given observation belonging to the k component [@mclust_pol1]. Unsupervised machine learning algorithms are often criticized for introducing bias by hyper parameter settings. `mclust` addresses this by estimating a grid of different models and hyper parameter constellations. Bayesian Information Criterion (BIC) is provided to pick the most useful model [@mclust]. The metric is penalized for the complexity of the model to ensure Osam Razor. 
 
 
-All CHES party data is part of the clusterting even though it could not be present in the ESS micro data. Clustering involves two dimesnions and four indicators: 
+All CHES party data is part of the clustering even though it could not be present in the ESS micro data. Clustering involves two dimensions and four indicators: 
 
-* Anti-Establishment
+- Left-Right
+- Anti-Establishment
     + antielite_salience 
     + eu_position
-* Progressivism vs Traditionalism
+- Progressivism vs Traditionalism
     + civlib_laworder
     + galtan 
 
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/gg_mc_bic.pdf} 
-\caption{BICs for candidate mixture models for clustering the CHES party positioning data set. Following Fraley and Raftery (2010), the candidate component structures are labeled using: EII=spherical, equal volume; EEI=diagonal, equal volume and shape; EVI=diagonal, equal volume, varying shape; EEE=ellipsoidal, equal volume, shape, and orientation; VEV=ellipsoidal, equal shape; VII=spherical, unequal volume; VEI=diagonal, varying volume, equal shape; VVI=diagonal, varying volume and shape; EEV=ellipsoidal, equal volume and equal shape; VVV=ellipsoidal, varying volume, shape, and orientation.}
+\caption{BIC Model Selection for mixture models on the CHES party positioning data set. Following Fraley and Raftery (2010), the grid component structures are labeled using: EII=spherical, equal volume; EEI=diagonal, equal volume and shape; EVI=diagonal, equal volume, varying shape; EEE=ellipsoidal, equal volume, shape, and orientation; VEV=ellipsoidal, equal shape; VII=spherical, unequal volume; VEI=diagonal, varying volume, equal shape; VVI=diagonal, varying volume and shape; EEV=ellipsoidal, equal volume and equal shape; VVV=ellipsoidal, varying volume, shape, and orientation.}
 \end{figure}
 
 The estimated grid models are represented by the following identifiers: EII, VII, EEI, VEI, EVI, VVI, EEE, EEV, VEV and VVV. The first Letter refers to volume, the second to shape and the third to orientation. E stands for “equal”, V for “variable” and I for “coordinate axes” [@kassambara2017practical].
@@ -89,7 +88,7 @@ each variable by its range gives consistently superior recovery of the underlyin
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/gg_mc_cluster.pdf} 
-\caption{BIC Model Selection and Uncertainty Boundaries}
+\caption{Classification and Cluster Boundaries}
 \end{figure}
 
 
@@ -137,7 +136,8 @@ cluster_all %>%
   add_footnote(c("Note: Standard deviations are in parentheses"), notation = "number")
 ```
 
-To validate the clusters lets inspect the party classification for three countries:
+To validate the clusters lets inspect the party classification for three countries. The final cluster vector is attached to the data with name `cluster`.
+
 
 ```{r}
 ches_parties <- ches_clust %>%
@@ -158,16 +158,71 @@ ches_parties %>%
 ```
 
 
+
+
 \clearpage
 
-### EFA Scores
+## Principal Component Analysis
+
+Principal Component Analysis (PCA) another unsupervised machine learning approach is now used to reduced the dimensions of two item batteries to get a parsimonious model size. For both variables we are only interested in the first Dimension/Component that contributes most to the variability in the underlining data structure. The formal model for the first principal component of a data set is the linear combination its features 
+
+$$Z_i = \phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}X_p$$
+
+that has the largest variance and where is the first principal component loading vector, with elements $\phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}$ are normalized, which means that $\sum^p_{j=1} \phi^2_{j1} = 1$. To calculate these loadings, we must find the vector that maximizes the variance. It can be shown using techniques from linear algebra that the eigenvector corresponding to the largest eigenvalue of the covariance matrix is the set of loadings that explains the greatest proportion of the variability. This method does not depend compared to Factor Analysis or SEM on model assumptions and error distributions.  
 
 
+### Trust Items
+
+\begin{figure}[b!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/trust_cor.png} 
+\caption{Bivariate Scatter plots for item battery public trust}
+\end{figure}
 
 
+First we explore the diemnionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are especially critical against political institutions and put more overall confidence in the police. 
+
+The next plot shows a two-dimensional representation of the data that captures most of the information in a lower-dimensional subspace. The First two components contribute together to nearly 80% of the total variance. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\linewidth]{images/pca1_vis.pdf} 
+\caption{First and Second PC Dimensions for the Trust Items}
+\end{figure}
+
+\begin{figure}[b!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/trust_eval.pdf} 
+\caption{scree plot and Component Contribution by Variable}
+\end{figure}
+
+As each principal component vector defines a direction in the feature space and all arrows in Figure X point to the same direction we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 66,7% of the total Variance by the first dimension. We can further see that the trust items for political institutions do somewhat differ in their contribution to the first PC due to different reasons. The European Parliament is often seen as disconnected from people and the police is always highly appreciated by everyone. The first PC scores are stored for later analysis as `pc_trust`. 
 
 
+### Immigration Items
 
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/imm_cor.png} 
+\caption{Bivariate Scatter Plots for item battery immigration}
+\end{figure}
+
+Next we applied the same PCA for the Immigration Items. But first we explore again the nationality of the given data by standard pairwise scatter plots for each variable combination. The visual inspection again confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables have only 4 levels. This Likert scale is assumed to be equal-distant to be suitable for PCA. 
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.6\linewidth]{images/pca2_vis.pdf} 
+\caption{PCA Dimensionality for the Immigration Items}
+\end{figure}
+
+The two-dimensional representation of the immigration items proposes again a strong one PC solution but points to a minor second dimension entirely rooted in imm_econ. We are only interested in the first PC that captures over 70% of the total variance. The scree plot and contribution plot support these findings. The final PC scores are stored for later analysis as `pc_imm`.
+
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/imm_eval.pdf} 
+\caption{scree plot and Component Contribution by Variable}
+\end{figure}
 
 
 
