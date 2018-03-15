@@ -51,7 +51,15 @@ https://www.chesdata.eu/our-surveys/
 
 ## Model Based Clustering
 
-Voting for a right wing party is often approximated by left-right scales or is time-intensiv coded. This analysis adopts Cas Mudde’s clear minimalist definition of populism to identify core features that all sub types of populism have in common. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes as well as their opposition to globalization. Subsequently, we propose to classify European populist parties along a progressive and traditionalist left-right dimension.
+Voting for a right wing party is often approximated by left-right scales or is time-intensiv coded. This analysis adopts Cas Mudde’s clear minimalist definition of populism to identify core features that all sub types of populism have in common. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes as well as their opposition to globalization. Subsequently, we propose to classify European populist parties along a progressive and traditionalist left-right dimension. Some CHES party indicators are part of the clustering even though they are not be present in the ESS micro data. 
+
+<!-- - Left-Right -->
+<!-- - Anti-Establishment -->
+<!--     + antielite_salience  -->
+<!--     + eu_position -->
+<!-- - Progressivism vs Traditionalism -->
+<!--     + civlib_laworder -->
+<!--     + galtan  -->
 
 This multidimensional classification problem is best approached by model-based hierarchical clustering [@mclust]. This tool set is already adopted in political science and praised for estimating meaningful clusters on high-dimensional data political science [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes the data generating process to be driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub population is separately estimated and summarized by a mixture of these sub populations. Therefore the density tends to be centered at the multidimensional means ($\mu_k$) and increased by geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell the Gaussian Finite Normal Mixture model assumes a d-dimensional data set $y_1, \dots , y_n$ to calculate G components with the likelihood
 
@@ -60,16 +68,6 @@ $$\ell_{MIX} (\theta_1, \dots, \theta_G|y) = \prod^n_{i=1}\sum^G_{k=1} \tau_kf_k
 
 where $f_k$ is the density of the $\theta_k$ mixture parameters, unlike traditional methods model-based clustering uses a soft assignment and calculates $\tau_k$ that represents the probability of a given observation belonging to the k component [@mclust_pol1]. Unsupervised machine learning algorithms are often criticized for introducing bias by hyper parameter settings. `mclust` addresses this by estimating a grid of different models and hyper parameter constellations. Bayesian Information Criterion (BIC) is provided to pick the most useful model [@mclust]. The metric is penalized for the complexity of the model to ensure Osam Razor. 
 
-
-All CHES party data is part of the clustering even though it could not be present in the ESS micro data. Clustering involves two dimensions and four indicators: 
-
-- Left-Right
-- Anti-Establishment
-    + antielite_salience 
-    + eu_position
-- Progressivism vs Traditionalism
-    + civlib_laworder
-    + galtan 
 
 \begin{figure}[ht!]
 \centering
@@ -164,33 +162,32 @@ ches_parties %>%
 
 ## Principal Component Analysis
 
-Principal Component Analysis (PCA) another unsupervised machine learning approach is now used to reduced the dimensions of two item batteries to get a parsimonious model size. For both variables we are only interested in the first Dimension/Component that contributes most to the variability in the underlining data structure. The formal model for the first principal component of a data set is the linear combination its features 
+Principal Component Analysis (PCA) another unsupervised machine learning approach is now used to reduce the dimensions of two item batteries to get a parsimonious model size. For both variables we are only interested in the first Dimension/Component that contributes most to the variability in the underlining data structure. The formal model for the first principal component of a data set is the linear combination its features 
 
 $$Z_i = \phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}X_p$$
 
-that has the largest variance and where is the first principal component loading vector, with elements $\phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}$ are normalized, which means that $\sum^p_{j=1} \phi^2_{j1} = 1$. To calculate these loadings, we must find the vector that maximizes the variance. It can be shown using techniques from linear algebra that the eigenvector corresponding to the largest eigenvalue of the covariance matrix is the set of loadings that explains the greatest proportion of the variability. This method does not depend compared to Factor Analysis or SEM on model assumptions and error distributions.  
+that has the largest variance and where is the first principal component loading vector, with elements $\phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}$ are normalized, which means that $\sum^p_{j=1} \phi^2_{j1} = 1$. To calculate these loadings, we must find the vector that maximizes the variance. It can be shown using techniques from linear algebra that the eigenvector corresponding to the largest eigenvalue of the covariance matrix is the set of loadings that explains the greatest proportion of the variability. This method does not depend compared to Factor Analysis or SEM on model assumptions or multivariate error distributions. Despite all dimensionality reduction methods have different background and purposes they often yield similar results. But for construct validation I recommend factor analysis or any other framework that provides hypothesis testing.
 
-
-### Trust Items
-
-\begin{figure}[b!]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/trust_cor.png} 
 \caption{Bivariate Scatter plots for item battery public trust}
 \end{figure}
 
 
+### Trust Items
+
 First we explore the diemnionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are especially critical against political institutions and put more overall confidence in the police. 
 
 The next plot shows a two-dimensional representation of the data that captures most of the information in a lower-dimensional subspace. The First two components contribute together to nearly 80% of the total variance. 
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.6\linewidth]{images/pca1_vis.pdf} 
 \caption{First and Second PC Dimensions for the Trust Items}
 \end{figure}
 
-\begin{figure}[b!]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/trust_eval.pdf} 
 \caption{scree plot and Component Contribution by Variable}
