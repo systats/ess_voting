@@ -63,21 +63,13 @@ where $f_k$ is the density of the $\theta_k$ mixture parameters, unlike traditio
 
 All CHES party data is part of the clustering even though it could not be present in the ESS micro data. Clustering involves two dimensions and four indicators: 
 
-* Political
-    - Left-Right
-    - Anti-Establishment
-        + antielite_salience 
-        + eu_position
-    - Progressivism vs Traditionalism
-        + civlib_laworder
-        + galtan 
-* Economic
-    +
-* Social
-    +
-* Cultural
-    + Multiculturalism
-
+- Left-Right
+- Anti-Establishment
+    + antielite_salience 
+    + eu_position
+- Progressivism vs Traditionalism
+    + civlib_laworder
+    + galtan 
 
 \begin{figure}[ht!]
 \centering
@@ -144,7 +136,8 @@ cluster_all %>%
   add_footnote(c("Note: Standard deviations are in parentheses"), notation = "number")
 ```
 
-To validate the clusters lets inspect the party classification for three countries:
+To validate the clusters lets inspect the party classification for three countries. The final cluster vector is attached to the data with name `cluster`.
+
 
 ```{r}
 ches_parties <- ches_clust %>%
@@ -164,7 +157,6 @@ ches_parties %>%
   add_footnote(c("Note: ..."), notation = "number")
 ```
 
-The final cluster vector is attached to the data with name `cluster`.
 
 
 
@@ -181,36 +173,33 @@ that has the largest variance and where is the first principal component loading
 
 ### Trust Items
 
-First we explore the diemnionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are especially critical against political institutions and put more overall confidence in the police. 
-
-
-\begin{figure}[ht!]
+\begin{figure}[b!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/trust_cor.png} 
 \caption{Bivariate Scatter plots for item battery public trust}
 \end{figure}
 
+
+First we explore the diemnionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are especially critical against political institutions and put more overall confidence in the police. 
+
 The next plot shows a two-dimensional representation of the data that captures most of the information in a lower-dimensional subspace. The First two components contribute together to nearly 80% of the total variance. 
 
-\begin{figure}[ht!]
+\begin{figure}[h!]
 \centering
 \includegraphics[width=0.6\linewidth]{images/pca1_vis.pdf} 
 \caption{First and Second PC Dimensions for the Trust Items}
 \end{figure}
 
-As each principal component vector defines a direction in the feature space and all arrows in Figure X point to the same direction we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 66,7% of the total Variance by the first dimension. We can further see that the trust items for political institutions do somewhat differ in their contribution to the first PC due to different reasons. The European Parliament is often seen as disconnected from people and the police is always highly appreciated by everyone. The first PC scores are stored for later analysis as `pc_trust`. 
-
-\begin{figure}[ht!]
+\begin{figure}[b!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/trust_eval.pdf} 
 \caption{scree plot and Component Contribution by Variable}
 \end{figure}
 
+As each principal component vector defines a direction in the feature space and all arrows in Figure X point to the same direction we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 66,7% of the total Variance by the first dimension. We can further see that the trust items for political institutions do somewhat differ in their contribution to the first PC due to different reasons. The European Parliament is often seen as disconnected from people and the police is always highly appreciated by everyone. The first PC scores are stored for later analysis as `pc_trust`. 
+
 
 ### Immigration Items
-
-Next we applied the same PCA for the Immigration Items. But first we explore again the nationality of the given data by standard pairwise scatter plots for each variable combination. The visual inspection again confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables have only 4 levels. This Likert scale is assumed to be equal-distant to be suitable for PCA. 
-
 
 \begin{figure}[ht!]
 \centering
@@ -218,14 +207,16 @@ Next we applied the same PCA for the Immigration Items. But first we explore aga
 \caption{Bivariate Scatter Plots for item battery immigration}
 \end{figure}
 
-The two-dimensional representation of the immigration items proposes again a strong one PC solution but points to a minor second dimension entirely rooted in imm_econ. We are only interested in the first PC that captures over 70% of the total variance. The scree plot and contribution plot support these findings. The final PC scores are stored for later analysis as `pc_imm`.
-
+Next we applied the same PCA for the Immigration Items. But first we explore again the nationality of the given data by standard pairwise scatter plots for each variable combination. The visual inspection again confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables have only 4 levels. This Likert scale is assumed to be equal-distant to be suitable for PCA. 
 
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.6\linewidth]{images/pca2_vis.pdf} 
 \caption{PCA Dimensionality for the Immigration Items}
 \end{figure}
+
+The two-dimensional representation of the immigration items proposes again a strong one PC solution but points to a minor second dimension entirely rooted in imm_econ. We are only interested in the first PC that captures over 70% of the total variance. The scree plot and contribution plot support these findings. The final PC scores are stored for later analysis as `pc_imm`.
+
 
 \begin{figure}[ht!]
 \centering
