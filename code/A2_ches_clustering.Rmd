@@ -16,6 +16,7 @@ ggplot2::theme_set(ggthemes::theme_few())
 
 ```{r}
 ches <- get(load("data/Rdata/ches_final.Rdata"))
+normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
 ches <- ches %>%
   mutate(populism = antielite_salience + corrupt_salience) %>% 
   mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
@@ -33,7 +34,6 @@ ches <- ches %>%
 The model parameters can be estimated using the Expectation-Maximization (EM) algorithm initialized by hierarchical model-based clustering. Each cluster k is centered at the means μk, with increased density for points near the mean.
 
 ```{r cluster_prep}
-normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
 ches_data <- ches %>% 
   drop_na(eu_position, antielite_salience, sociallifestyle, civlib_laworder, galtan) %>% 
   as.data.frame()

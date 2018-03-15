@@ -40,11 +40,13 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
 ```{r child = '2_theory.Rmd'}
 ```
-
+w
 # Methods
 
 ```{r child = '3_methods.Rmd'}
 ```
+
+\clearpage
 
 # Analysis
 
