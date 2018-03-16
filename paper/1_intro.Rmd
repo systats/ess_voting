@@ -2,38 +2,18 @@
 output: pdf_document
 ---
 
-## Subcaption 1
-
-## Subcaption 2
-
-
-```{r}
-x <- 1233.34
-y <- 44864
-z <- 34.876
-```
 
 
 
-This is a great way to test whether $`r x`$ really works in the way it is intended to work. This is different though becasue $`r toString(z)`$ might be better actually. Or how about $`r I(y)`$.
+In the following study we are eager to answer the question whether ...
+
+In this article, we will try to explain differences in extreme right-wing voting behaviour between 16 Western European countries. So far, cross-national empirical research on extreme right-wing voting has been scarce, even though in 1988 von Beyme emphasized that ‘future studies of right-wing extremism will have to pay more attention to the whole political context of the political movement’ (von Beyme 1988: 16).
 
 
-**Some Citations**
+@buhlmann2006individual : 
+Any attempt to explain an individual’s propensity to vote must take into account the differences in the context in which the individual lives. We mainly assume that different contextual settings will have different impacts on individual participation. We also expect different interactions between contextual and individual characteristics. In other words: differences in individual resources play a key role in explaining individual participation behaviour, but the latter also depends on the canton in which a person lives. On the one hand the cantonal context builds a framework which fosters or hinders the individual’s propensity to vote, and on the other hand, the effect of individual resources on participation also differs from context to context.
 
-* brady1995beyond = `brady1995beyond`
-* [@brady1995beyond] = `[@brady1995beyond]`
-* [@brady1995beyond, p. 38] = `[@brady1995beyond, p. 38]`
-* @brady1995beyond [p. 33]  = `@brady1995beyond [p. 33] `
-* [-@brady1995beyond] = `[-@brady1995beyond]`
-* [@brady1995beyond; @brady1995beyond] = `[@brady1995beyond; @brady1995beyond]`
-* [for example see @brady1995beyond: 92-93] = `[for example see @brady1995beyond: 92-93]`
-
-
-ALLE Zitierweisen von Zotero gibts [HIER](https://www.zotero.org/styles).
-
-
-* Populism as we understand it
-* Liberal Populism
-* Illiberal Populism
-* Cultural Backlash
-* Economic Deprivation
+Third, we advance a methodological argument. We hypothesise that an individual’s propensity to vote is in uenced by both his personal characteristics as well as by contextual attributes. Individual-level explanations of electoral participation on the one hand typically argue that non-voting is determined by a combination of facilitative and motivational variables. Motivational factors as such include ideology, political attitudes, and basic tendencies, whereas facilitative determinants refer to speci c individual resources and socio-demographic factors (education, income, age etc.) (Kleinhenz 1995; Knight and Marsh 2002). Macro-level approaches, on the other hand, evaluate the determinants of total voting turnout rather than focusing on the individual (Franklin 2002; Norris 2002). In this strand of research, cross-country variance is explained by cultural, economic, and – most importantly – politico-institutional settings (Blais and Dobrzynska 1998; Crepaz 1990; Franklin 2002; Freitag 1996, 2005; Norris 2004; Wernli 1998). While micro-level research neglects the contextual framework within which individual actions take place, macro-level approaches face the risk of ecological fallacies. Against this background, we argue that non-voting has to be explained by both individual and contextual characteristics. Moreover, the environmental context also functions in an interactive manner, in uencing the strength of the effect of individual characteristics on participation.
+By combining individual and contextual determinants of electoral participation and modelling them simultaneously with multilevel analysis, we contribute to the overcoming of the “midlife crisis” facing electoral studies (Curtice 2002: 6). We see multilevel analysis as a possibility to overcome the micro-macro dualism widely discussed in social sciences. With multilevel analyses, the determinants of individual behaviour can be analysed in a much more appropriate manner than with simple micro-analyses or macro-analyses (Hank 2003).
+For the  rst time, data on the 2003 Swiss elections allows the in uence of the cantonal contexts on individual participation to be tested. We can therefore go further than the very rare existing studies on electoral participation in Switzerland, which are conducted either on the aggregate (Freitag 2005; Wernli 1998, 2001) or the individual level (Ballmer-Cao and Sgier 1998; Bühlmann et al. 2003).
+This contribution is divided into four sections. Before we turn to a short description of our method and our results we discuss the existing theoretical and empirical contributions to our investigation (next section). Our last section offers conclusions and outlines for future research.
