@@ -35,13 +35,14 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
 ```{r child = '1_intro.Rmd'}
 ```
+\newpage
 
 # State of Research
 
 ```{r child = '2_state.Rmd'}
 ```
 
-# Theory
+# Voting Right-Wing Parties
 
 ```{r child = '3_theory.Rmd'}
 ```
@@ -58,7 +59,7 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 ```{r child = '5_analysis.Rmd'}
 ```
 
-# Conclusions
+# Conclusion
 
 ```{r child = '6_conclusions.Rmd'}
 ```

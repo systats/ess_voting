@@ -1,11 +1,11 @@
 ---
 output: pdf_document
 ---
-
+here we will dispaly the results
 
 ## Results
 
-## Discussions
+## Discussion
 
 
 
