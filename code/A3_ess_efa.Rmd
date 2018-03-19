@@ -74,8 +74,17 @@ fit_pca1 <- trust_data %>%
 ```
 
 ```{r}
-sjt.pca(fit_pca1, nmbr.fctr = 1)
+#sjt.pca(fit_pca1, nmbr.fctr = 1)
 pca1_vis <- fviz_pca_var(fit_pca1, col.var = "black")
+
+ess_pca1 <- ess %>%
+  select(id, country) %>%
+  dplyr::left_join(
+    trust_data_id %>% 
+      mutate(pc_trust = fit_pca1$x[,1]) %>%
+      select(id, pc_trust)
+  )
+
 #ggsave(pca1_vis, filename = "images/pca1_vis.pdf")
 ```
 
@@ -99,7 +108,11 @@ And again we begin by exploring the diemnionality of immigration items by applyi
 ```{r}
 imm_data_id <- ess %>%
   select(id, contains("imm")) %>%
+  mutate(imm_econ = (imm_econ-10)*-1) %>%
   na.omit() 
+
+# summary(imm_data_id$imm_econ)
+#(imm_data_id$imm_econ - 10)*-1
 
 imm_data <- imm_data_id %>% select(-id)
 ```
@@ -143,6 +156,21 @@ fit_pca2 <- imm_data %>%
 #sjt.pca(fit_pca2, nmbr.fctr = 1)
 pca2_vis <- fviz_pca_var(fit_pca2, col.var = "black")
 #ggsave(pca2_vis, filename = "images/pca2_vis.pdf")
+
+ess_pca2 <- ess %>%
+  select(id, country) %>%
+  dplyr::left_join(
+    imm_data_id %>% 
+      mutate(pc_imm = fit_pca2$x[,1],
+             pc_imm_econ = fit_pca2$x[,2]) %>%
+      select(id, pc_imm, pc_imm_econ)
+  )
+
+ess_scores <- ess %>% 
+  left_join(ess_pca1) %>%
+  left_join(ess_pca2)
+
+#save(ess_scores, file = "data/Rdata/ess_scores.Rdata")
 ```
 
 

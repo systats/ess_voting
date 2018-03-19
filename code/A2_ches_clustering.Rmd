@@ -16,15 +16,15 @@ ggplot2::theme_set(ggthemes::theme_few())
 
 ```{r}
 ches <- get(load("data/Rdata/ches_final.Rdata"))
-normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
-ches <- ches %>%
-  mutate(populism = antielite_salience + corrupt_salience) %>% 
-  mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
-                               (1 - normalize_range(eu_position)))*100) %>% #+ 
-                           #    (1 - range01(eu_budgets)))*100) %>% 
-  mutate(liberalism = sociallifestyle + civlib_laworder + galtan) %>% 
-  mutate(populism = normalize_range(populism)*100) %>% 
-  mutate(liberalism = normalize_range(liberalism)*100) 
+# normalize_range <- function(x){(x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))}
+# ches <- ches %>%
+#   mutate(populism = antielite_salience + corrupt_salience) %>% 
+#   mutate(populism2 = normalize_range(normalize_range(antielite_salience) + 
+#                                (1 - normalize_range(eu_position)))*100) %>% #+ 
+#                            #    (1 - range01(eu_budgets)))*100) %>% 
+#   mutate(liberalism = sociallifestyle + civlib_laworder + galtan) %>% 
+#   mutate(populism = normalize_range(populism)*100) %>% 
+#   mutate(liberalism = normalize_range(liberalism)*100) 
 ```
 
 ## CLustering
@@ -71,7 +71,7 @@ gg_mc_horse <- ches_data %>%
 ```{r cluster_val}
 # BIC values used for choosing the number of clusters 
 gg_mc_bic <- fviz_mclust(mc, "BIC", palette = "grey")
-ggsave(gg_mc_bic, filename = "images/gg_mc_bic.pdf", width = 7, height = 4)
+#ggsave(gg_mc_bic, filename = "images/gg_mc_bic.pdf", width = 7, height = 4)
 
 gg_mc_cluster <- fviz_mclust(mc, "classification", geom = "point",
 pointsize = 1.5, palette = "grey")

@@ -15,7 +15,7 @@ pacman::p_load(dplyr, ggplot2, readr, haven, broom, purrr, tidyr, magrittr, labe
 
 ```{r}
 options(scipen = 999)
-ess <- get(load("data/Rdata/ess_score.Rdata"))
+ess <- get(load("data/Rdata/ess_scores.Rdata"))
 ches <- get(load("data/Rdata/ches_clust.Rdata"))
 
 ess_prep <- ess %>%
@@ -35,24 +35,43 @@ ess_prep <- ess %>%
     )
 
 ches_prep <- ches %>%
-  select(party_id, vote_id, k3, lrgen)
+  select(party_id, vote_id, cluster, lrgen)
 ```
 
 ```{r}
-data_final <- ess_prep %>% 
+dat <- ess_prep %>% 
   left_join(ches_prep, by = c("vote_id", "party_id")) 
 
-data_final <- data_final %>%
-  mutate(vote_right = ifelse(k3 == 2, 1, 0)) %>%
+dat <- dat %>%
+  mutate(vote_right = ifelse(cluster == "Right Populist", 1, 0)) %>%
   mutate(lr_dff = abs(lrscale - lrgen))
   
 #save(data_final, file = "data/Rdata/data_final.Rdata")
 
-data_final %>%
+dat %>%
   dplyr::select(lr_dff, lrgen, lrscale) %>%
   summary
 
-table(data_final$vote_right)
+table(dat$vote_right)
+table(dat$cluster)
+
+
+dat %>%
+  filter(!is.na(vote_right)) %>%
+  group_by(country, gndr, vote_right) %>%
+  tally %>%
+  filter(vote_right == 1) %>%
+  ggplot(aes(gndr, n, fill = as.factor(gndr))) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~country, scales = "free") +
+  ggthemes::theme_hc() +
+  ggthemes::scale_fill_hc()
+
+dat %>% 
+  mutate(vote_right = as.factor(vote_right*(gndr))) %>%
+  ggplot(aes(vote_right, pc_trust, colour = vote_right)) +
+  geom_boxplot()
+  
 ```
 
 
@@ -60,14 +79,44 @@ table(data_final$vote_right)
 
 
 ```{r}
-library(arm)
+glimpse(dat)
+library(lme4)
+#devtools::install_github("strengejacke/sjPlot")
+#devtools::install_github("lme4/lme4")
+library(sjPlot)
 #data_final$trust_scores
-ml1 <- glmer(vote_right ~ trust_scores + (1|country), data = data_final, family = binomial(link = "logit"))
-display(ml1)
-# sjp.glmer(ml1)
+ml1 <- glmer(vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr + scale(edu) + scale(rel) + (1|country), data = dat, family = binomial(link = "logit"))
+arm::display(ml1)
+sjp.glmer(ml1)
+# fixed params
+plot_model(ml1, type = "est")
+# plot_model(ml1, type = "std2")
+ggran <- plot_model(ml1, type = "re", sort.est = T)
+
+predict(ml1)
+
+
+library(forecast)
+ggran$data %>%
+  mutate(term = fct_reorder(term, estimate)) %>%
+  ggplot(aes(term, estimate)) +
+  geom_point() + 
+  coord_flip()
+
+# random params
 # marginal effects
-sjp.glmer(ml1, type = "eff", show.ci = TRUE)
+sjp.glmer(ml1, type = "eff", vars = "rel")
+sjp.glmer(ml1, type = "eff", vars = "gndr")
+sjp.glmer(ml1, type = "eff", vars = "pc_trust")
+sjp.glmer(ml1, type = "eff", vars = "pc_imm")
+sjp.glmer(ml1, type = "eff", vars = "pc_imm_econ")
 ```
+
+```{r}
+sjp.glmer()
+```
+
+
 
 
 ## brms

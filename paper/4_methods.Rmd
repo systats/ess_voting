@@ -19,33 +19,16 @@ ches_clust <- get(load("data/ches_clust.Rdata"))
 
 ## Research Design
 
-* [summary stats](https://github.com/dcomtois/summarytools)
-
-
-## Data Descriptions
-
 Different data sources data set were used:
 
-* **European Social Survey** [@ess08]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
-* **Chapel Hill Expert Survey**. Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
+* **European Social Survey** [@ess2016]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
+* **Chapel Hill Expert Survey** [@ches2014]: Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
+* **Varieties of Democracy** [@vdem2017]: V-DEM aims to transperently produce Indicators of Democracy that are multidimensional and disaggregated. This modern framework reflects the complexity of the concept of democracy and captures seven high-level principles of democracy: electoral, liberal, participatory, deliberative, egalitarian, majoritarian and consensual, and collects data to measure these principles. 
 
 The dependent variable from our final model is the populism cluster infered from Ches party data that has been matched and merged to the ESS micro data on voting a particular party. Variable Description ... 
 
-```{r, eval = F, fig.cap="Number of Survey Responses by Country", fig.pos="ht!"}
-dt %>%
-  group_by(country, round, round_year) %>%
-  tally %>%
-  ungroup() %>%
-  mutate(country = fct_reorder(country, n)) %>%
-  mutate(label = paste0(round, " (", round_year, ")")) %>%
-  ggplot(aes(country, n, fill = label)) +
-  geom_bar(stat = "identity") +
-  scale_fill_grey(start = .8, end = .4) +
-  coord_flip() +
-  labs(x = "", y = "")
-```
+* [summary stats](https://github.com/dcomtois/summarytools)
 
-https://www.chesdata.eu/our-surveys/
 
 \clearpage
 
@@ -134,10 +117,10 @@ cluster_all %>%
   add_footnote(c("Note: Standard deviations are in parentheses"), notation = "number")
 ```
 
-To validate the clusters lets inspect the party classification for three countries. The final cluster vector is attached to the data with name `cluster`.
+To validate the clusters lets inspect the party classification for three countries. For checking the consitency of the clusters, the variable means are calculated by cluster in Table \@ref(tab:cluster_means).  The final cluster vector is attached to the data with name `cluster`.
 
 
-```{r}
+```{r cluster_means}
 ches_parties <- ches_clust %>%
   mutate(party_name = paste0(party_name, " (", cname, ")")) %>%
   filter(cname %in% c("ger", "fra")) %>%
@@ -199,12 +182,13 @@ As each principal component vector defines a direction in the feature space and 
 ### Immigration Items
 
 \begin{figure}[ht!]
+\label{imm_cor}
 \centering
 \includegraphics[width=0.9\linewidth]{images/imm_cor.png} 
 \caption{Bivariate Scatter Plots for item battery immigration}
 \end{figure}
 
-Next we applied the same PCA for the Immigration Items. But first we explore again the nationality of the given data by standard pairwise scatter plots for each variable combination. The visual inspection again confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables have only 4 levels. This Likert scale is assumed to be equal-distant to be suitable for PCA. 
+Next we applied the same PCA for the Immigration Items. But first we explore again the nationality of the given data by standard pairwise scatter plots for each variable combination in figure \@ref(fig:imm_cor). The visual inspection again confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables have only 4 levels. This Likert scale is assumed to be equal-distant to be suitable for PCA. 
 
 \begin{figure}[ht!]
 \centering
@@ -221,7 +205,44 @@ The two-dimensional representation of the immigration items proposes again a str
 \caption{scree plot and Component Contribution by Variable}
 \end{figure}
 
+## Statistical Models
+
+As part of this paper we built different statistical models with different repsonse functions. As detailed explained in section X and the dependent variable $y_i$ is labeled as 1 for voters of right wing populist parties estimated by model based-clustering. 
+
+$$
+y_i = \left\{
+\begin{array}{l}
+1:\text{ if voted for a right populist party}\\
+0:\text{ if not}
+\end{array}\right.
+$$
+
+This binary data structure is best fitted by logistic regression and more generally by multilevel logistic regression. The latter takes into account that respondents are nested in their country context [@gelman07]. The formal model is defined as
+
+$$Pr(y_i = 1) = logit^{-1}(\alpha_{j[i]} + \beta x_{[i]} + \gamma_jz_{[i]})$$
+
+By deploying random effects with context level predictors we are able to model country-specific heterogenity and group level variance [@steenbergen02]. Additionally we avoid fixed effects for nested data to control model complexity and prevent overfitting. The random intercepts have the shape 
+
+$$\alpha_{j} \sim N(\mu_\alpha, \sigma^2_{country})$$
+
+
+*This means that the level-1 disturbances $\epsilon_{i}$ are drawn from a normal distribution with mean $0$ and variance $\sigma^2$ [@gelman07]. Since we expect justification rationality to be important for individual and group level, we include the groups mean as level 2 predictor (generally noted with $z_{q}$ $(q=1,... Q)$). Thus, the level-2 model for the random intercept model is:*
+
+*According to Gelman and Hill [@gelman07], multi-level models appropriately estimate with a minimum of five level-2 units. Furthermore, Gelman and Hill address the impact of little group variation. If this is the case, the multi-level model is reduced to a classical regression without any group indicators. However, multi-level models control for the remaining intra-class or cluster correlation and do not perform poorer than standard regressions on the same data (steenbergen02; gelman07). Finally, we used the restricted maximum likelihood estimator (REML) which performs less biased under the conditions of little group variation as well as a small number of groups [@shikano14].*
 
 
 
+```{r, eval = F, fig.cap="Number of Survey Responses by Country", fig.pos="ht!"}
+dt %>%
+  group_by(country, round, round_year) %>%
+  tally %>%
+  ungroup() %>%
+  mutate(country = fct_reorder(country, n)) %>%
+  mutate(label = paste0(round, " (", round_year, ")")) %>%
+  ggplot(aes(country, n, fill = label)) +
+  geom_bar(stat = "identity") +
+  scale_fill_grey(start = .8, end = .4) +
+  coord_flip() +
+  labs(x = "", y = "")
+```
 

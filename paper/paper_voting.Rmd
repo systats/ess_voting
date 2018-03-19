@@ -1,5 +1,6 @@
 ---
 geometry: "left=2.5cm,right=4cm,top=2.5cm,bottom=2cm"
+fontsize: 12pt
 output: 
   pdf_document:
     toc: false
@@ -8,7 +9,7 @@ output:
      in_header: imports/header.tex
      before_body: imports/title_page.tex
      #after_body: appendix.tex
-documentclass: article
+#documentclass: article
 bibliography: [efficacy.bib, methods.bib]
 csl: imports/university-of-stuttgart-sowi-standards.csl
 link-citations: yes
