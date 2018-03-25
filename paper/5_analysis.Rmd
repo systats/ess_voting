@@ -1,9 +1,30 @@
 ---
 output: pdf_document
 ---
-here we will dispaly the results
+
 
 ## Results
+
+And you don‘t have confidence intervals, but so called
+„uncertainty“ (or credible, or also high density) intervals,
+which are quantiles of draws from the posterior distribution
+(e.g. 2.5% and 97.5% quantiles of the posterior as 95% „CI“).
+
+However: Typically, 90% intervals are reported, because these are
+more stable than the 95% intervals, or a 89% interval (because 89 is
+the closest prime number below the conventional (but arbitrary) 95;
+see McElreath 2015).
+Daniel Lüdecke Choosing Informative Priors in rstanarm 7
+95% usually require about at least 10.000 samples / draws from the posterior (Kruschke 2015).
+
+
+To be precise: There is no unique
+Bayesian “point estimate”. The
+posterior mean minimizes expected
+squared error, whereas the posterior
+median minimizes expected absolute
+error (i.e. the difference of estimates
+from true values over samples).
 
 ## Discussion
 

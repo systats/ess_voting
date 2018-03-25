@@ -1,0 +1,471 @@
+---
+title: "Baysian Modeling"
+output: html_notebook
+---
+
+
+## Packages
+
+```{r}
+# devtools::install_github("rmcelreath/rethinking")
+# devtools::install_github("mjskay/tidybayes")
+pacman::p_load(dplyr, ggplot2, readr, haven, purrr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, tidyr, broom, rethinking, tidybayes)
+# devtools::install_github("tidyverse/tidyr")
+```
+
+
+## Load Data
+
+```{r}
+options(scipen = 999)
+ess <- get(load("data/Rdata/ess_scores.Rdata")) %>%
+  mutate(
+    id = 1:n(),
+    round_year = case_when(
+      round == 8 ~ "2016",
+      round == 7 ~ "2014",
+      round == 6 ~ "2012",
+      round == 5 ~ "2010",
+      round == 4 ~ "2008",
+      round == 3 ~ "2006",
+      round == 2 ~ "2004",
+      round == 1 ~ "2002",
+      TRUE ~ "") %>% 
+      as.numeric
+    )
+ches <- get(load("data/Rdata/ches_clust.Rdata")) %>%
+  select(party_id, vote_id, cluster, lrgen)
+
+vdem <- get(load("data/Rdata/vdem.Rdata"))
+vdem$pol_kill <- NULL
+
+vdem <- vdem %>%
+  select(country, year, reason, common, counter_arg, elite_consul, engage_soc, clientelistic, welfare_working, equal_edu, equal_health) %>%
+  mutate(country = as.character(country))
+```
+
+## V-Dem 
+
+```{r}
+sel <- ess %>%
+  group_by(country, round_year) %>%
+  tally
+
+vdem_list <- list()
+for(jj in seq_along(sel$country)){
+  temp <- vdem %>%
+    filter(country == sel$country[1]) %>%
+    filter(year %in% (sel$round_year[1]-2):(sel$round_year[1]+2))
+  
+    if(nrow(temp) == 0){
+      temp <- vdem %>%
+        filter(country == sel$country[jj]) %>%
+        arrange(desc(year)) %>%
+        slice(1:3)
+    }
+
+  vdem_list[[jj]] <- temp
+}
+
+vdem_window <- bind_rows(vdem_list) %>%
+  group_by(country) %>%
+  summarise_if(is.double, mean, na.rm = T) %>%
+  ungroup()
+```
+
+
+
+## Merge Data
+
+```{r}
+dat <- ess %>% 
+  left_join(ches, by = c("vote_id", "party_id")) %>%
+  left_join(vdem_window, by = c("country")) %>%
+  mutate(vote_right = ifelse(cluster == "Right Populist", 1, 0)) %>%
+  mutate(lr_dff = abs(lrscale - lrgen))
+
+glimpse(dat)
+#save(dat, file = "data/Rdata/data_final.Rdata")
+```
+
+
+# Formula
+
+```{r}
+mf <- formula(
+fall ~ age + dementia + multimorb + sex + mobility
+)
+```
+
+
+
+# German Subset 
+
+## glm
+
+```{r}
+library(tidyverse)
+
+dat_ger <- dat %>%
+  filter(country == "Germany") %>%
+  tidyr::drop_na(vote_right, pc_trust, pc_imm, pc_imm_econ, gndr)
+
+table(dat_ger$vote_right)
+
+
+fit_glm1 <- dat_ger %>% 
+  glm(
+    vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr,
+    family = binomial(link = "logit"),
+    data = .
+  )
+
+summary(fit_glm1)
+exp(coef(fit_glm1))
+```
+
+
+### stan_glm
+
+```{r}
+library(rstanarm)
+# rstan_options(auto_write = TRUE)
+# options(mc.cores = min(2, parallel::detectCores()))
+
+fit_bglm1 <- stan_glm(
+  vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr,
+  data = dat_ger, 
+  seed = 2018, 
+  chains = 4, 
+  iter = 1000,
+  family = binomial(link = "logit"), 
+  #prior = t_prior, prior_intercept = t_prior,
+  seed = 1
+)
+
+broom::tidy(fit_bglm1)
+#plot(fit_bglm1)$data
+#plogis(coef(fit_bglm1)[2])
+exp(coef(fit_bglm1))
+#summary(fit_bglm1)
+```
+
+stan_glm returns the posterior distribution for the parameters describing the uncertainty related to unknown parameter values:
+
+```{r}
+library(ggplot2)
+pplot <- plot(fit_bglm1, "areas", prob = 0.95, prob_outer = 1)
+pplot$data
+
+pplot + 
+  geom_vline(xintercept = 0) +
+  theme_minimal()
+```
+
+
+```{r}
+names(fit_bglm1)
+fit_bglm1 %>% plot("trace")
+```
+
+
+
+```{r}
+fit_bglm1 %>%
+  spread_samples(pc_imm) %>%
+  mean_qi(.prob = c(.95, .66)) %>%
+  ggplot(aes(y = 1:2, x = pc_imm)) +
+  geom_pointintervalh() 
+```
+
+```{r}
+dat_ger %>%
+  #group_by(cyl) %>%
+  modelr::data_grid(pc_trust = modelr::seq_range(pc_trust, n = 51)) %>%
+  add_fitted_samples(fit_bglm1)
+
+dat_ger %>%
+  modelr::data_grid(gndr) %>%
+  add_fitted_samples(fit_bglm1) %>%
+  ggplot(aes(x = estimate, y = gndr)) +
+  stat_pointintervalh(.prob = c(.66, .95))
+```
+
+
+
+
+
+rstanarm supports loo package which implements fast [Pareto smoothed leave-one-out cross-validation](https://arxiv.org/abs/1507.04544) (**PSIS-LOO**) to compute expected log predictive density (elpd):
+
+```{r}
+library(loo)
+loo::loo(fit_bglm1)
+```
+
+
+```{r}
+linpred <- fit_bglm1 %>% 
+  posterior_linpred()
+preds <- fit_bglm1 %>% 
+  posterior_linpred(transform = T)
+
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+
+length(pred)
+length(dat_ger$vote_right)
+table(pr, dat_ger$vote_right)
+
+library(caret)
+# confusion matrix
+confusionMatrix(pred, dat_ger$vote_right)
+```
+
+# Full Data
+
+## stan_glmer
+
+```{r}
+table(dat_ger$country)
+
+dat_multi <- dat %>%
+  filter(country %in% c("Germany", "France", "Turkey", "Poland")) %>%
+  tidyr::drop_na(vote_right, pc_trust, pc_imm, pc_imm_econ, gndr)
+
+
+fit_bglmer1 <- stan_glmer(
+  vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr + (1|country),
+  data = dat_multi, 
+  seed = 2018, # for internal reproducability
+  chains = 2, # how many sample processess? 2-4
+  iter = 500, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+broom::tidy(fit_bglmer1)
+plot(fit_bglmer1)
+#plogis(coef(fit_bglm1)[2])
+exp(coef(fit_bglmer1)$country)
+#summary(fit_bglm1)
+
+fit_bglmer1 %>%
+    plot("trace")
+```
+
+
+How to go further?
+
+* sjplot
+* tidybayes 
+* own modelling
+
+
+ extract the posterior sample
+
+```{r}
+post <- as.data.frame(fit_bglmer1)
+
+# obtain ”point estimate” (posterior median)
+coef(fit_bglmer1)
+# same as
+purrr::map_dbl(post, median)
+
+# obtain uncertainty interval
+posterior_interval(fit_bglmer1)
+# same as
+purrr::map(post, ~ quantile(.x, probs = c(.05, .95)))
+
+# or for High Density Intervals
+sjstats::hdi(fit_bglmer1)
+```
+
+
+
+
+
+## byesplot
+
+```{r}
+#devtools::install_github("stan-dev/bayesplot", dependencies = TRUE, build_vignettes = TRUE)
+library(bayesplot)
+color_scheme_set("gray")
+gg1 <- fit_bglmer1 %>%
+  as.matrix() %>%
+  mcmc_areas(prob = 0.8) #pars = c("cyl", "drat", "am", "wt"),
+gg1
+
+post %>%
+  mcmc_areas(prob = 0.8) #pars = c("cyl", "drat", "am", "wt"),
+```
+
+```{r}
+ggmc_dens <- mcmc_dens(post, pars = c("pc_trust", "gndr"))
+ggmc_hist <- mcmc_hist(post, pars = c("pc_trust", "gndr"))
+gggrid1 <- gridExtra::grid.arrange(ggmc_dens, ggmc_hist, ncol = 1)
+gggrid1
+```
+
+```{r}
+ggmc_hist_by_trace <- fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_hist_by_chain(pars = c("pc_trust", "gndr"))
+ggmc_dens_by_trace <- fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_dens_overlay(pars = c("pc_trust", "gndr"))
+ggmc_dens_by_trace
+gggrid2 <- gridExtra::grid.arrange(ggmc_hist_by_trace, ggmc_dens_by_trace, ncol = 1)
+gggrid2
+```
+
+
+```{r}
+fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_scatter(pars = c("(Intercept)", "gndr"),
+             size = 1.5, alpha = 0.5)
+```
+
+
+
+```{r}
+fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_hex(pars = c("(Intercept)", "pc_trust"))
+```
+
+
+```{r}
+gg10 <- fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_pairs(pars = c("(Intercept)", "pc_trust", "pc_imm"), alpha = .5,
+           off_diag_args = list(size = 1.5))
+gg10
+```
+
+```{r}
+gg10 <- fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_pairs(pars = c("(Intercept)", "pc_trust", "pc_imm"), alpha = .5,
+           off_diag_args = list(size = 1.5), diag_fun = "dens", off_diag_fun = "hex") +
+  ggtitle("Pairwise trace plots and posterior densities")
+gg10
+```
+
+
+
+
+```{r}
+fit_bglmer1 %>%
+  as.array() %>%
+  mcmc_trace(pars = c("(Intercept)", "pc_trust", "pc_imm"),
+           facet_args = list(ncol = 1, strip.position = "left"))
+```
+
+
+
+
+
+
+
+
+
+```{r}
+color_scheme_set("red")
+table(dat_multi$vote_right)
+ppc_dens_overlay(
+  y = dat_ger$vote_right,
+  yrep = posterior_predict(fit_bglm1, draws = 500)
+)
+
+fit_bglmer1 %>%
+  posterior_predict(draws = 500) %>%
+  ppc_stat_grouped(y = dat_multi$vote_right,
+                   group = dat_multi$gndr,
+                   stat = "median")
+```
+
+
+
+
+
+
+## Tidybayes
+
+Extract the samples corresponding to the overall mean and standard deviation of observations.
+
+```{r}
+library(tidybayes)
+parameters(fit_bglm1)
+names(fit_bglm1)
+
+fit_bglm1 %>%
+  spread_samples(`(Intercept)`, pc_imm) %>%
+  head(10)
+```
+
+If we want the mean and 95% quantile interval of the parameters, we can apply mean_qi:
+
+```{r}
+fit_bglm1 %>%
+  spread_samples(`(Intercept)`) %>%
+  mean_qi()
+```
+
+```{r}
+fit_bglm1 %>%
+  gather_samples(`(Intercept)`, pc_trust) %>%
+  mean_qi()
+```
+
+
+```{r}
+#devtools::install_github("lionel-/ggstance")
+library(ggstance)
+fit_bglm1 %>%
+  spread_samples(`(Intercept)`, pc_trust) %>%
+  mean_qi(condition_mean = `(Intercept)` + pc_trust) %>%
+  ggplot(aes(y = 1, x = condition_mean, xmin = conf.low, xmax = conf.high)) +
+  ggstance::geom_pointrangeh()
+```
+
+```{r}
+dat_ger %>% 
+  select(vote_right, pc_trust, pc_imm, pc_imm_econ, country) %>%
+  visdat::vis_miss()
+
+
+st_glmer_1 <- stan_glmer(
+    vote_right ~ pc_trust + pc_imm + pc_imm_econ + (1|country),
+    family = binomial(link = "logit"),
+    data = dat
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(rethinking)
+mod4 <- rethinking::map(
+    alist(
+        presence <- dbinom(total, p),
+        logit(p) <- a + br * reminder + bi * inscription,
+        a ~ dnorm(0, 10),
+        c(br, bi) ~ dnorm(0, 10) 
+    ),
+    data = dat_ger
+  )
+```
+

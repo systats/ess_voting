@@ -207,7 +207,7 @@ The two-dimensional representation of the immigration items proposes again a str
 
 ## Statistical Models
 
-As part of this paper we built different statistical models with different repsonse functions. As detailed explained in section X and the dependent variable $y_i$ is labeled as 1 for voters of right wing populist parties estimated by model based-clustering. 
+As detailed explained in section X and the dependent variable $y_i$ is labeled as 1 for voters of right wing populist parties estimated by model based-clustering. 
 
 $$
 y_i = \left\{
@@ -217,18 +217,68 @@ y_i = \left\{
 \end{array}\right.
 $$
 
-This binary data structure is best fitted by logistic regression and more generally by multilevel logistic regression. The latter takes into account that respondents are nested in their country context [@gelman07]. The formal model is defined as
-
-$$Pr(y_i = 1) = logit^{-1}(\alpha_{j[i]} + \beta x_{[i]} + \gamma_jz_{[i]})$$
-
-By deploying random effects with context level predictors we are able to model country-specific heterogenity and group level variance [@steenbergen02]. Additionally we avoid fixed effects for nested data to control model complexity and prevent overfitting. The random intercepts have the shape 
-
-$$\alpha_{j} \sim N(\mu_\alpha, \sigma^2_{country})$$
+This binary data structure is best fitted by generalized linear models (GLMs) with Binomial response function (Bernoulli). As part of this paper we built different logistic regression models coming from different statistcial backgrounds. First we used the common frequentist approach to statistical inference but rapidly augemented Bayesian models brought by the `rstanarm` package. Second we employed multilevel models both frequentist and bayesian to better capture the nested data generation process of the ESS micro/country data structure [@gelman07].
 
 
-*This means that the level-1 disturbances $\epsilon_{i}$ are drawn from a normal distribution with mean $0$ and variance $\sigma^2$ [@gelman07]. Since we expect justification rationality to be important for individual and group level, we include the groups mean as level 2 predictor (generally noted with $z_{q}$ $(q=1,... Q)$). Thus, the level-2 model for the random intercept model is:*
+### Frequentist Approach
 
-*According to Gelman and Hill [@gelman07], multi-level models appropriately estimate with a minimum of five level-2 units. Furthermore, Gelman and Hill address the impact of little group variation. If this is the case, the multi-level model is reduced to a classical regression without any group indicators. However, multi-level models control for the remaining intra-class or cluster correlation and do not perform poorer than standard regressions on the same data (steenbergen02; gelman07). Finally, we used the restricted maximum likelihood estimator (REML) which performs less biased under the conditions of little group variation as well as a small number of groups [@shikano14].*
+The first simple logistic model (frequentist) predicts the mean log-odds of a respndant voting right-populist, through a linear combination of an intercept and a slope the latter allowing to quantify the effect of each covariate. 
+
+\begin{align}
+  y_i & \sim \text{Binomial}(n_i,p_i)\\
+  logit^{-1}(p_i) & = \alpha + \beta x_{i}
+\end{align}
+
+The inverse link function can be switched to the righ-hand side of the formula to non-linearlly transform the outcome.
+
+This complete pooling archetecture is seperatly deployed to each country dataset and summerized accordingly to explor country-specific model defecencies. The fitting function is taken from the core `stats` function o R. 
+
+The simple version of the GLM assumes independece of each individual observation which produces in a less severe szenario downwards biased parameter standard errors (SE). By deploying random effects with context level predictors we are able to model country-specific heterogenity and group level standard errors [@steenbergen02]. The formal multilevel logitic regresion has the formula 
+
+
+\begin{align}
+  y_i &\sim \text{Binomial}(n_i,p_i)\\
+  logit^{-1}(p_i) & = \alpha_{j} + \beta x_{i} \in(0,1)\\
+  \alpha_{j} & \sim N(\mu_\alpha, \sigma^2_{\alpha})
+\end{align}
+
+The group intercepts $\alpha_j$ are assumed to be a independent and identically distributed random variable with hyperprior grand mean and equal variance. This population distribution is partilly fitted by pooling its sub-pupulation intercepts (share information) and used to refit or reguralize the parameters towards 0. Thereby we compromise between complete pooling and no pooling that in order to balance bias and variance (trade-off). In sum we avoid fixed effects for nested data to control model complexity and prevent overfitting.
+
+
+The models discussed so far are often seen in social sciences. Now we leave the world of asymptotic siginificance and turn to the Bayesian framework. 
+
+
+### Bayesian Approach
+
+These model have substantive advantages for our analysis as
+
+* estimates are penalized towards to a plausible parameter space
+* prior knowledge can be incorporated
+* do not link evidence to p-values but rather propagate the uncertainty of the model to the posterior distribution so we can inspect it. 
+* ... and many more. 
+
+Nomral byaesian logistic regression
+
+\begin{align}
+  y_i &\sim \text{Binomial}(n_i,p_i)\\
+  logit^{-1}(p_i) &= \alpha + \beta x_{i} \in(0,1)\\
+  \alpha &\sim N(0, 10)\\
+  \beta &\sim N(0, 10)
+\end{align}
+
+Varying Intercept ...
+
+
+
+\begin{align}
+  y_i & \sim Binomial(n_i,p_i)\\
+  logit^{-1}(p_i) & = \alpha_j + \beta x_{i} \in(0,1)\\
+  \alpha_j & \sim N(\alpha, \sigma)\\
+  \alpha & \sim N(0, 10)\\
+  \sigma &\sim \text{HalfCauchy}(0, 10)\\
+  \beta & \sim N(0, 10)
+\end{align}
+
 
 
 
@@ -246,3 +296,9 @@ dt %>%
   labs(x = "", y = "")
 ```
 
+
+<!-- $$\pi(y,x|\theta) = \pi(y|x, \theta) $$ -->
+<!-- this cancelles out to  -->
+<!-- $$\pi(y, x|\theta) \approx \pi(y|x, \theta) $$ -->
+<!-- now we plug in a binomial distribution.  -->
+<!-- $$\pi(y|x, \theta) = Bin(y|f(x, \theta), N)$$ -->
