@@ -7,4 +7,7 @@ output: pdf_document
 ## Future Research
 
 
+add: conclusion: future work:
+Trust in the political establishment and cofidence in the responsiveness of the political system are often treated intuitively as synonyms. Consequently, external efficacy is mostly analysed with framework of political trust. -> future work should differentiate trust and efficacy methodisch....besseren einblick in die mechanismen...
+
 

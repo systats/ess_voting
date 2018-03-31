@@ -13,6 +13,18 @@ In the following study we are eager to answer the question whether ...
 In this article, we will try to explain differences in extreme right-wing voting behaviour between 16 Western European countries. So far, cross-national empirical research on extreme right-wing voting has been scarce, even though in 1988 von Beyme emphasized that ‘future studies of right-wing extremism will have to pay more attention to the whole political context of the political movement’ (von Beyme 1988: 16).
 
 
+[@buhl06]: 
+Since Lazarsfeld et al. (1949), socio-economic status (SES) has played a prominent role in explaining both the decision to vote and participation behaviour. Normally, socio-economic status consists of the individual’s educational level, income, and her occupational status. In theory, a high SES leads to a higher propensity to participate in elections, because individuals with high education levels and/or with a high income have more disposable time and a greater capacity to understand political debates (Kleinhenz 1995). This leads not only to greater political interest, but also to a greater probability of participation. Furthermore, wealthy individuals have an interest in contributing to the stability of the political system by participating in it (Wol nger and Rosenstone 1980).
+• Political skills are seen as the most important resource of participation (Bühlmann 2006): individuals with a lot of political interest (Campbell et al. 1976; Lazarsfeld et al. 1949) and internal ef cacy (Campbell et al. 1976) make wider use of all the different possibilities of in uencing politics - including electoral participation - than uninterested individuals or persons who do not think they have the ability to participate in politics.2
+• Political attitudes play a crucial role in the decision to vote. Since Campbell et al. (1976), party ties have been considered long-term factors which stabilise electoral choices. However, party ties are also important for participation (Dalton et al. 1984). People with only weak, or no party identi cation at all, show a lower propensity to participate in elections (Pattie and Johnston 1998). An important and widely discussed (especially in German political science (Feist 1992))3 factor is the attitude that voting is a civic duty. If participation in elections is seen as the ful lment of one’s duty as a citizen, the propensity to vote increases.
+
+@kenski2006connections: 
+Research in several European countries has shown that voters for the radical
+right-wing parties feel less politically efficacious, more alienated, and more dissatisfied with the established parties, the political institutions, and the demo..
+cratic system in general (Beta 1994:35..67).
+
+
+
 @buhlmann06 : 
 Any attempt to explain an individual’s propensity to vote must take into account the differences in the context in which the individual lives. We mainly assume that different contextual settings will have different impacts on individual participation. We also expect different interactions between contextual and individual characteristics. In other words: differences in individual resources play a key role in explaining individual participation behaviour, but the latter also depends on the canton in which a person lives. On the one hand the cantonal context builds a framework which fosters or hinders the individual’s propensity to vote, and on the other hand, the effect of individual resources on participation also differs from context to context.
 
