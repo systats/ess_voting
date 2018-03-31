@@ -2,31 +2,33 @@
 output: pdf_document
 ---
 
+We present the empricial findings of our regression analysis in figure \ref{reg}. Models 1 & 2 report the findings on individual level, starting with the most relevant variables to this analysis. Model 2 presents the findings concerning macro predictiors only and Model 3 simultaneously includes all discussed explanatory variables. This sequential or cummulative regression approach allows to assess the stability of each parameter under increasing model complexity^[We decided to avoid p-values but instead focussing on confidence intervals and more informative methods which is in accordance to the ASA].
 
-## Results
-
-And you don‘t have confidence intervals, but so called
-„uncertainty“ (or credible, or also high density) intervals,
-which are quantiles of draws from the posterior distribution
-(e.g. 2.5% and 97.5% quantiles of the posterior as 95% „CI“).
-
-However: Typically, 90% intervals are reported, because these are
-more stable than the 95% intervals, or a 89% interval (because 89 is
-the closest prime number below the conventional (but arbitrary) 95;
-see McElreath 2015).
-Daniel Lüdecke Choosing Informative Priors in rstanarm 7
-95% usually require about at least 10.000 samples / draws from the posterior (Kruschke 2015).
+The multilevel analysis indicates (Model 1) that people with higher trust in state institutions indeed are more likely to vote for a right populist party^[As `pc_trust` is mapped to a standradised vector space the parameters can only be interpreted in terms of stardard deviations. This is the case for every extracted principal component]. This positive effect seems to be counter-intutitive but to be affiliated with a democratic party requires trust in the political process and that change can be enacted. This effect gets only stronger by adding individual control variables. 
 
 
-To be precise: There is no unique
-Bayesian “point estimate”. The
-posterior mean minimizes expected
-squared error, whereas the posterior
-median minimizes expected absolute
-error (i.e. the difference of estimates
-from true values over samples).
+... pc_imm & _econ
 
-## Discussion
 
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.9\linewidth]{images/gggrid.png} 
+\caption{Log Odds Forest Plot}
+\label{reg}
+\end{figure}
+
+With regard to the control variables, the empirical analysis shows that women are overall less likely to vote for right populist as well as increasing income reduces the likelihood too. Likewise trust, political interest seems to be slightly increased for right-wing voters... As expected is the left right self-evaluation strongly related to one's voting preferences. Finally religiosity slightly increases the favourability for right populists. 
+
+In the next step we included context level predictors. In order to avoid convergence problems we standardized each continuous variable. Model 3 includes context predictors only which are very stable in comparison to the full model 4. The tendency for the obligatory referendum index and engaged society is slightly negative but inconsistent. In contrast the percent of refugee population living in a country dramatically increase the likelihood for its people to vote for right populist. Additionally we modeled a second order polynom of ref_pop in order to allow more flexibility of the model. As the negative sign of `ref_pop2` indicates a concave (inverted U-shape) we conclude that societies with very low and very high percentage of refugees are less likely to support right wing populists. 
+
+Evaluating the overall model performance is always problematic as through list-wise deletion of missing values the sample size for each model varies which could mislead an interpretation. Interestingly, the macro predictors do not account for much variability between countries in terms of voting right populist. In fact model 2 presents the most useful set of features and is parsenmonious. In order to better understand the multilevel parameters we applied model 2 to each country dataset seperatly. 
+
+The parameters of 25 simple logistic regressions are mapped inorder to identifiy country-specific effects and defiencies. 
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\linewidth]{images/ggmicro.png} 
+\caption{Odds Ratio Dot Plot by Country and Parameter}
+\end{figure}
 
 

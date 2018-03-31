@@ -17,17 +17,15 @@ ches_clust <- get(load("data/ches_clust.Rdata"))
 ```
 
 
-## Research Design
+## Data and Variables
 
-Different data sources data set were used:
+In order to test our set of hypotheses data is collected from different sources: 
 
-* **European Social Survey** [@ess2016]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. The data for the present analysis were collected from different survey waves the latest for each country.
-* **Chapel Hill Expert Survey** [@ches2014]: Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. The more recent survey waves also comprise questions on non-EU policy issues, such as immigration, redistribution, decentralization, and environmental policy.
-* **Varieties of Democracy** [@vdem2017]: V-DEM aims to transperently produce Indicators of Democracy that are multidimensional and disaggregated. This modern framework reflects the complexity of the concept of democracy and captures seven high-level principles of democracy: electoral, liberal, participatory, deliberative, egalitarian, majoritarian and consensual, and collects data to measure these principles. 
-
-The dependent variable from our final model is the populism cluster infered from Ches party data that has been matched and merged to the ESS micro data on voting a particular party. Variable Description ... 
-
-* [summary stats](https://github.com/dcomtois/summarytools)
+* **European Social Survey** [@ess2016]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists in several European countries. The objectives of the ESS are to understand the changing attitudes and values in Europe, to explain how European institutions are changing and to develop a range of European social indicators and values [@ess08]. We retrieved the latest data avavible for each country from the cummulative ESS.
+* **Chapel Hill Expert Survey** [@ches2014]: Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. This data set is used for clustering parties according to their similarity on populist indicators.
+* **Varieties of Democracy** [@vdem2017]: V-DEM aims to transperently produce Indicators of Democracy that are multidimensional and disaggregated. This modern framework reflects the complexity of the concept of democracy and captures seven high-level principles of democracy: electoral, liberal, participatory, deliberative, egalitarian, majoritarian and consensual, and collects data to measure these principles. This data delivers country-level predictors like ...
+* **Human Development Index** [@HDI]: Brought by the UN Human Deleopment Programm, HDI emphasizes people's capabilities as ultimate criteria for assessing the development of a country, not economic growth alone. This variable approximates modernization on a macro level. 
+* **World Bank Development Indicators** [@WDI]: An international effort to measure state performance and to reduce powerty through informative data analysis. We used to varibales .... as macro predictors. 
 
 
 \clearpage
@@ -151,14 +149,14 @@ $$Z_i = \phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}X_p$$
 
 that has the largest variance and where is the first principal component loading vector, with elements $\phi_{11} X_1 + \phi_{21} X_2 + \dots + \phi_{p1}$ are normalized, which means that $\sum^p_{j=1} \phi^2_{j1} = 1$. To calculate these loadings, we must find the vector that maximizes the variance. It can be shown using techniques from linear algebra that the eigenvector corresponding to the largest eigenvalue of the covariance matrix is the set of loadings that explains the greatest proportion of the variability. This method does not depend compared to Factor Analysis or SEM on model assumptions or multivariate error distributions. Despite all dimensionality reduction methods have different background and purposes they often yield similar results. But for construct validation I recommend factor analysis or any other framework that provides hypothesis testing.
 
+
+### Trust Items
+
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=0.9\linewidth]{images/trust_cor.png} 
 \caption{Bivariate Scatter plots for item battery public trust}
 \end{figure}
-
-
-### Trust Items
 
 First we explore the diemnionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are especially critical against political institutions and put more overall confidence in the police. 
 
@@ -205,6 +203,36 @@ The two-dimensional representation of the immigration items proposes again a str
 \caption{scree plot and Component Contribution by Variable}
 \end{figure}
 
+
+
+<!-- ### Satisfaction Items -->
+
+<!-- \begin{figure}[ht!] -->
+<!-- \centering -->
+<!-- \includegraphics[width=0.9\linewidth]{images/sat_cor.png}  -->
+<!-- \caption{Bivariate Scatter plots for item battery public trust} -->
+<!-- \end{figure} -->
+
+<!-- The last dimensionality reduction is applied to SATISFACTION items but first we explored by pairwise scatter plots the validity of the linearity assumption that come along with PCA. The visual inspection again confirms a strong association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail on 0, as people are ... -->
+
+<!-- The next plot shows a two-dimensional representation of the data that captures most of the information in a lower-dimensional subspace. The first component contributes 63% of the total variance. The Item Satification with Life is excluded due to questinable fit and little explanatory power. -->
+
+<!-- \begin{figure}[ht!] -->
+<!-- \centering -->
+<!-- \includegraphics[width=0.9\linewidth]{images/pca3_vis.pdf}  -->
+<!-- \caption{First and Second PC Dimensions for the Trust Items} -->
+<!-- \end{figure} -->
+
+<!-- \begin{figure}[ht!] -->
+<!-- \centering -->
+<!-- \includegraphics[width=0.9\linewidth]{images/sat_eval.pdf}  -->
+<!-- \caption{scree plot and Component Contribution by Variable} -->
+<!-- \end{figure} -->
+
+<!-- As each principal component vector defines a direction in the feature space and all arrows in Figure X point to the same direction we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 63% of the total Variance by the first dimension. The first PC scores are stored for later analysis as `pc_sat`.  -->
+
+
+
 ## Statistical Models
 
 As detailed explained in section X and the dependent variable $y_i$ is labeled as 1 for voters of right wing populist parties estimated by model based-clustering. 
@@ -217,67 +245,61 @@ y_i = \left\{
 \end{array}\right.
 $$
 
-This binary data structure is best fitted by generalized linear models (GLMs) with Binomial response function (Bernoulli). As part of this paper we built different logistic regression models coming from different statistcial backgrounds. First we used the common frequentist approach to statistical inference but rapidly augemented Bayesian models brought by the `rstanarm` package. Second we employed multilevel models both frequentist and bayesian to better capture the nested data generation process of the ESS micro/country data structure [@gelman07].
+This binary data structure is best fitted by generalized linear models (GLMs) with Binomial response function (Bernoulli). As part of this paper we built different logistic regression models with varing size amount of complexity. First, we discuss simple logistic regression. Second, we augmented logistic regression with a hierachcial representation to better capture the nested data generation process of the ESS micro/country data structure [@gelman07].
 
 
-### Frequentist Approach
+The first simple logistic model predicts the mean log-odds of a respndant voting right-populist, through a linear combination of an intercept and a slope the latter allowing to quantify the effect of each covariate. Finally the inverse link function ($logit^{-1}$) non-linearlly transforms the outcome into new vector space $\in(0,1)$
 
-The first simple logistic model (frequentist) predicts the mean log-odds of a respndant voting right-populist, through a linear combination of an intercept and a slope the latter allowing to quantify the effect of each covariate. 
 
 \begin{align}
   y_i & \sim \text{Binomial}(n_i,p_i)\\
   logit^{-1}(p_i) & = \alpha + \beta x_{i}
 \end{align}
 
-The inverse link function can be switched to the righ-hand side of the formula to non-linearlly transform the outcome.
 
-This complete pooling archetecture is seperatly deployed to each country dataset and summerized accordingly to explor country-specific model defecencies. The fitting function is taken from the core `stats` function o R. 
+This complete pooling archetecture is seperatly deployed to each country dataset and summerized accordingly to explor country-specific model characteristica, as well as defecencies. The fitting function is taken from the core R `stats` functions. 
 
 The simple version of the GLM assumes independece of each individual observation which produces in a less severe szenario downwards biased parameter standard errors (SE). By deploying random effects with context level predictors we are able to model country-specific heterogenity and group level standard errors [@steenbergen02]. The formal multilevel logitic regresion has the formula 
 
 
 \begin{align}
   y_i &\sim \text{Binomial}(n_i,p_i)\\
-  logit^{-1}(p_i) & = \alpha_{j} + \beta x_{i} \in(0,1)\\
+  logit^{-1}(p_i) & = \alpha_{j} + \beta x_{i}\\
   \alpha_{j} & \sim N(\mu_\alpha, \sigma^2_{\alpha})
 \end{align}
 
-The group intercepts $\alpha_j$ are assumed to be a independent and identically distributed random variable with hyperprior grand mean and equal variance. This population distribution is partilly fitted by pooling its sub-pupulation intercepts (share information) and used to refit or reguralize the parameters towards 0. Thereby we compromise between complete pooling and no pooling that in order to balance bias and variance (trade-off). In sum we avoid fixed effects for nested data to control model complexity and prevent overfitting.
+The group intercepts $\alpha_j$ are assumed to be an independent and identically distributed random variable with hyperprior grand mean and equal variance. This population distribution is partilly fitted by pooling its sub-pupulation intercepts (share information) and used to refit or reguralize the parameters towards 0. Thereby we compromise between complete pooling and no pooling, in order to balance bias and variance (trade-off). In sum we avoid fixed effects for nested data to control model complexity and prevent overfitting.
 
+<!-- ### Bayesian Approach -->
 
-The models discussed so far are often seen in social sciences. Now we leave the world of asymptotic siginificance and turn to the Bayesian framework. 
+<!-- These model have substantive advantages for our analysis as -->
 
+<!-- * estimates are penalized towards to a plausible parameter space -->
+<!-- * prior knowledge can be incorporated -->
+<!-- * do not link evidence to p-values but rather propagate the uncertainty of the model to the posterior distribution so we can inspect it.  -->
+<!-- * ... and many more.  -->
 
-### Bayesian Approach
+<!-- Nomral byaesian logistic regression -->
 
-These model have substantive advantages for our analysis as
+<!-- \begin{align} -->
+<!--   y_i &\sim \text{Binomial}(n_i,p_i)\\ -->
+<!--   logit^{-1}(p_i) &= \alpha + \beta x_{i} \in(0,1)\\ -->
+<!--   \alpha &\sim N(0, 10)\\ -->
+<!--   \beta &\sim N(0, 10) -->
+<!-- \end{align} -->
 
-* estimates are penalized towards to a plausible parameter space
-* prior knowledge can be incorporated
-* do not link evidence to p-values but rather propagate the uncertainty of the model to the posterior distribution so we can inspect it. 
-* ... and many more. 
-
-Nomral byaesian logistic regression
-
-\begin{align}
-  y_i &\sim \text{Binomial}(n_i,p_i)\\
-  logit^{-1}(p_i) &= \alpha + \beta x_{i} \in(0,1)\\
-  \alpha &\sim N(0, 10)\\
-  \beta &\sim N(0, 10)
-\end{align}
-
-Varying Intercept ...
+<!-- Varying Intercept ... -->
 
 
 
-\begin{align}
-  y_i & \sim Binomial(n_i,p_i)\\
-  logit^{-1}(p_i) & = \alpha_j + \beta x_{i} \in(0,1)\\
-  \alpha_j & \sim N(\alpha, \sigma)\\
-  \alpha & \sim N(0, 10)\\
-  \sigma &\sim \text{HalfCauchy}(0, 10)\\
-  \beta & \sim N(0, 10)
-\end{align}
+<!-- \begin{align} -->
+<!--   y_i & \sim Binomial(n_i,p_i)\\ -->
+<!--   logit^{-1}(p_i) & = \alpha_j + \beta x_{i} \in(0,1)\\ -->
+<!--   \alpha_j & \sim N(\alpha, \sigma)\\ -->
+<!--   \alpha & \sim N(0, 10)\\ -->
+<!--   \sigma &\sim \text{HalfCauchy}(0, 10)\\ -->
+<!--   \beta & \sim N(0, 10) -->
+<!-- \end{align} -->
 
 
 

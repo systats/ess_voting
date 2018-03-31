@@ -60,6 +60,8 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 ```{r child = '5_analysis.Rmd'}
 ```
 
+\clearpage
+
 # Conclusion
 
 ```{r child = '6_conclusions.Rmd'}
