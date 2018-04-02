@@ -19,6 +19,7 @@ Select Variables from ESS round 8 and the cummulative round 1-7 for missing coun
 * `Round 5`: Turkey, Kosovo, Italy, Greece, Croatia
 * `Round 7`: Spain, Protugal, Lithuania, Denmark
 
+
 ```{r, warning=F, message=F, error=F, results="hide"}
 get_party <- function(x){
   dat1 <- x %>% 
@@ -66,45 +67,91 @@ ess_add <- read_sav("data/original/ESS1-7e01.sav") %>%
 ess_all <- bind_rows(ess, ess_add)
 dim(ess_all)
 
+
+
+
 step1 <- ess_all %>%
-    select(idno, cntry, cname, essround, hinctnta, polintr, lrscale,
-         rlgatnd, pbldmn, ctzcntr, rlgatnd, edulvlb, eduyrs, yrbrn, gndr,
+    select(idno, cntry, cname, essround, region, gndr, yrbrn, hinctnta, polintr,
+         lrscale, eduyrs, edulvlb, rlgatnd, psppsgva, psppipla, actrolga, cptppola, 
          dplyr::starts_with("trst"),
-         dplyr::starts_with("stf"),
+         stflife, stfeco, stfgov, stfdem, stfedu, stfhlth,
          #dplyr::starts_with("im"),
          imbgeco, imsmetn, imdfetn, impcntr,
          #dplyr::starts_with("prtvt")
          vote, vote_id
-    )
-
-table(step1$vote_id)
-```
-
-
-```{r}
-step2 <- step1 %>%
+    ) %>%
     mutate(country = countrycode::countrycode(cname, "country.name", "country.name")) %>%
     mutate(iso2 = countrycode::countrycode(country, "country.name", "iso2c")) %>%
     mutate(iso3 = countrycode::countrycode(cname, "country.name", "iso3c")) %>%
     select(-cntry, -cname)
-colnames(step2)
+
+colnames(step1)
 ```
 
 
+List all variables (old and new names) as well as their range of levels. 
+
+
+**ID and Individual Characteristica**
+
+* `id` (`idno`):
+* `country` (`cntry`):
+* `region` (`region`): NUTS
+* `gender` (`gndr`): 1 Male - 2 Female
+* `age` (`yrbrn`): 
+* `edu_year` (`eduyrs`): full-time education in years
+* `income` (`hinctnta`): Household's total net income 1 (1st decentile) - 10 (10th decentile)
+* `poli_intr` (`polintr`):
+* `lrscale` (`lrscale`): In politics people sometimes talk of "left" and "right". Using this card, where would you place yourself on this scale, where 0 means the left and 10 means the right? 1 (Extremely dissatisfied) - 10 (Extremely satisfied)
+* `rel` (`rlgatnd`): Apart from special occasions such as weddings and funerals, about how often do you attend religious services nowadays? 1 (Every day) - 7 (Never)
+
+**Trust**
+
+0 means you do not trust an institution at all, and 10 means you have complete trust.
+
+
+**EXT EFFICACY**
+
+* `have_say` (`psppsgva`): How much would you say the political system in [country] allows people like you to have a say in what the government does? 1 (Not at all) - 5 (A great deal)
+* `have_infl` (`psppipla`): And how much would you say that the political system in [country] allows people like you to have an influence on politics? 1 (Not at all) - 5 (A great deal)
+
+
+**INT EFFICACY**
+
+* `pol_grp` (`actrolga`): How able do you think you are to take an active role in a group involved with political issues? 1 (Not at all able) - 5 (Completely able) 
+* `pol_conf` (`cptppola`): And how confident are you in your own ability to participate in politics? 1 (Not at all confident) - 5 (Completely confident )
+
+
+**Satisfaction**
+
+* `s_life` (`stflife`): All things considered, how satisfied are you with your life as a whole nowadays? Please answer using this card, where 0 means extremely dissatisfied and 10 means extremely satisfied. 1 (Extremely dissatisfied) - 10 (Extremely satisfied)
+* `s_econ` (`stfeco`): On the whole how satisfied are you with the present state of the economy in [country]? 1 (Extremely dissatisfied) - 10 (Extremely satisfied)
+* `s_gov` (`stfgov`): Now thinking about the [country] government, how satisfied are you with the way it is doing its job? 1 (Extremely dissatisfied) - 10 (Extremely satisfied)
+* `s_dem` (`stfdem`): How satisfied with the way democracy works in country? 1 (Extremely dissatisfied) - 10 (Extremely satisfied)
+* `state_edu` (`stfedu`): Now, using this card, please say what you think overall about the state of education in [country] nowadays?
+* `sate_health` (`stfhlth`): Still using this card, please say what you think overall about the state of health services in [country] nowadays? 
+
+**Cultural Deprivation**
+
+* `imm_econ` (`imbgeco`): Would you say it is generally bad or good for [country]'s economy that people come to live here from other countries? 1 (Bad for the economy) - 10 (Good for the economy)
+* `imm_same` (`imsmetn`): Now, using this card, to what extent do you think [country] should allow people of the same race or ethnic group as most [country] people to come and live here ? 1 (Allow many to come and live here) - 4 (Allow none)
+* `imm_diff` (`imdfetn`): How about people of a different race or ethnic group from most [country] people? 1 (Allow many to come and live here) - 4 (Allow none) 
+* `imm_poor` (`impcntr`): How about people from the poorer countries outside Europe? 1 (Allow many to come and live here) - 4 (Allow none)
+
+
+
 ```{r}
-step3 <- step2 %>%
+step2 <- step1 %>%
     rename(
       id = idno, 
       round = essround, 
       income = hinctnta,
       pol_inter = polintr,
       gndr = gndr,
-      year = yrbrn,
+      age = yrbrn,
       edu_year = eduyrs,
       edu = edulvlb,
       rel = rlgatnd,
-      demo = pbldmn,
-      citz = ctzcntr,
       trust_parl = trstprl, 
       trust_pol = trstplt,
       trust_party = trstprt,
@@ -115,34 +162,24 @@ step3 <- step2 %>%
       s_econ = stfeco,
       s_gov = stfgov,
       s_dem = stfdem,
+      state_edu = stfedu,
+      sate_health = stfhlth,
       imm_econ = imbgeco,
       imm_same = imsmetn,
       imm_diff = imdfetn,
-      imm_poor = impcntr
+      imm_poor = impcntr,
+      have_say = psppsgva,
+      have_infl = psppipla,
+      pol_grp = actrolga,
+      pol_conf = cptppola
     )
 
-### Not included so far
-# news_pol = nwspol
-# inet = netusoft
-# poli_intr = polintr
-# have_say = psppsgva
-# pol_grp = actrolga
-# have_infl = psppipla
-# in_eff = cptppola
-# party_act = wrkprty
-# sign_pet = sgnptit
-# state_edu = stfedu
-# sate_health = stfhlth
-# eu_state = euftf
-# social_lazy = sblazy
-# region = regio
-
-glimpse(step3)
+glimpse(step2)
 ```
 
 ```{r}
 ### Germany special 
-step3$vote_id[step3$country == "Germany"] <- step3 %>%
+step2$vote_id[step2$country == "Germany"] <- step2 %>%
   filter(country == "Germany") %>%
   mutate(vote_id = stringr::str_extract(vote_id, "\\d$")) %>%
   .$vote_id
@@ -151,14 +188,14 @@ step3$vote_id[step3$country == "Germany"] <- step3 %>%
 Filter problematic countries
 
 ```{r}
-step4 <- step3 %>%
+step3 <- step2 %>%
   filter(!(country %in% c("Romania", "Malta", "Luxembourg", "Latvia", "Lithuania")))%>%
   mutate(vote_id = ifelse(vote_id == "", "", paste(iso2, vote_id, sep = "_")))
 ```
 
 
 ```{r}
-ess_parties <- step4 %>%
+ess_parties <- step3 %>%
   filter(vote != "") %>%
   group_by(country, iso2, vote, vote_id) %>%
   tally %>%
@@ -177,16 +214,15 @@ matching_data <- openxlsx::read.xlsx("data/original/ess_parties_new.xlsx") %>%
   na.omit
 ```
 
+
 ## Match party data 
 
 mapping ches data to ess
 
 ```{r}
-glimpse(step4)
-
-ess_final <- step4 %>%
+ess_final <- step3 %>%
   left_join(matching_data, by = "vote_id")
-
+glimpse(ess_final)
 # save(ess_final, file = "data/Rdata/ess_final.Rdata")
 
 ess_final %>%
@@ -195,9 +231,7 @@ ess_final %>%
 ```
 
 
-# CHES
-
-## PDF to dataframe
+## CHES
 
 ```{r}
 # pacman::p_load(pdftables)
@@ -213,10 +247,10 @@ ess_final %>%
 # 
 ```
 
-## Import and ESS matching
+
+Import and ESS matching
 
 ```{r}
-
 clist <- list(
   BE = "Belgium",
   DK  = "Denmark",
@@ -283,4 +317,131 @@ ches_final <- ches %>%
 # library(openxlsx)
 # #openxlsx::write.xlsx(ches_parties, file = "data/ches_parties.xlsx")
 # #readr::write_csv(ches_parties, path = "data/ches_parties.csv")
+```
+
+
+## V-Dem 
+
+* `ori` = `v2xdd_i_or`: Obligatory referendum index
+* Population size (E) (e_population)
+Question: What is the size of the population?
+* `pop_total` = `e_mipopula`: What is the total population (in millions)?
+Clarifications: Missing data within a time-series is interpolated using a linear model,
+increasing the number of observations from 3969 to 20979.
+
+* `range_consul` = (`v2dlconslt`) Range of consultation: When important policy changes are being considered, how wide is the range
+of consultation at elite levels?
+    + 0: No consultation. The leader or a very small group (e.g. military council) makes authoritative decisions on their own.
+    + 1: Very little and narrow. Consultation with only a narrow circle of loyal party/ruling elites.
+    + 2: Consultation includes the former plus a larger group that is loyal to the government, such as the ruling party’s or parties’ local executives and/or women, youth and other branches.
+    + 3: Consultation includes the former plus leaders of other parties.
+    + 4: Consultation includes the former plus a select range of society/labor/business representatives.
+    + 5: Consultation engages elites from essentially all parts of the political spectrum and all politically relevant sectors of society and business.
+
+*  `engage_soc` = (`v2dlengage`) Engaged society: When important policy changes are being considered, how wide and how independent are public deliberations?
+    + 0: Public deliberation is never, or almost never allowed.
+    + 1: Some limited public deliberations are allowed but the public below the elite levels  almost always either unaware of major policy debates or unable to take part in them.
+    + 2: Public deliberation is not repressed but nevertheless infrequent and non-elite tors are typically controlled and/or constrained by the elites.
+    + 3: Public deliberation is actively encouraged and some autonomous non-elite groups rticipate, but it is confined to a small slice of specialized groups that tends to be e same across issue-areas.
+    + 4: Public deliberation is actively encouraged and a relatively broad segment of n-elite groups often participate and vary with different issue-areas.
+    + 5: Large numbers of non-elite groups as well as ordinary people tend to discuss major licies among themselves, in the media, in associations or neighborhoods, or in the reets. Grass-roots deliberation is common and unconstrained.
+
+* ~~`perc_imm` = (`v2elnoncit`): Resident noncitizens who cannot vote (C).  What percentage (%) of the people residing in the country (or colony) does not enjoy the legal right to vote in national elections because they are not full citizens?~~
+
+
+
+```{r}
+# devtools::install_github("xmarquez/vdem")
+# library(vdem)
+vdem <- read.csv("data/original/vdem7.1/vdem.csv")
+
+vdem_final <- vdem %>%
+  select(country_name, year, v2xdd_i_or, v2dlconslt, v2dlengage) %>%
+  rename(ori = v2xdd_i_or, range_consul = v2dlconslt, engage_soc = v2dlengage, country = country_name)
+```
+
+
+## Human Development Index
+
+http://hdr.undp.org/en/content/human-development-index-hdi
+http://hdr.undp.org/en/data
+
+```{r}
+dir("data/original")
+
+hdi_final <- read.csv("data/original/hdi.csv", skip = 1, stringsAsFactors = F) %>%
+  select(-contains(".")) %>%
+  gather("year", "hdi", -Country) %>%
+  mutate(year = year %>% stringr::str_extract("\\d{4}")) %>%
+  rename(country = Country) %>% 
+  mutate(year = as.character(year)) %>%
+  mutate(country = countrycode::countrycode(country, "country.name", "country.name"))
+```
+
+
+
+## WDI 
+
+* `unempl` = (`SL.UEM.TOTL.ZS`): Unemployment, total (% of total labor force) (modeled ILO estimate)
+* `ref_pop` = (`SM.POP.REFG`): Refugee population by country or territory of asylum Search data e.g. GDP, population, Indonesia DataBankMicrodataData Catalog Refugee population by country or territory of asylum.
+
+```{r}
+library(WDI)
+wdi <- WDI::WDI(
+  country = "all", 
+  indicator = c("SL.UEM.TOTL.ZS", "SM.POP.REFG"),
+  start = 2000, 
+  end = 2017
+) 
+
+wdi_final <- wdi %>% 
+  rename(unempl = SL.UEM.TOTL.ZS, ref_pop = SM.POP.REFG) %>%
+  mutate(year = as.character(year)) %>%
+  mutate(country = countrycode::countrycode(country, "country.name", "country.name")) %>%
+  filter(!is.na(country))
+
+glimpse(wdi_final)
+```
+
+
+## Merge Macro
+
+```{r}
+macro_all <- vdem_final %>%
+  mutate(year = as.character(year)) %>%
+  mutate(country = as.character(country)) %>%
+  left_join(hdi_final, by = c("country", "year")) %>%
+  left_join(wdi_final, by = c("country", "year"))
+glimpse(macro_all)
+```
+
+
+```{r}
+sel <- ess_final %>%
+  group_by(country, round_year) %>%
+  tally
+
+macro_final_list <- list()
+for(jj in seq_along(sel$country)){
+  temp <- final_macro %>%
+    filter(country == sel$country[jj]) %>%
+    filter(year %in% (sel$round_year[jj]-2):(sel$round_year[jj]+2))
+  
+    if(nrow(temp) == 0){
+      temp <- final_macro %>%
+        filter(country == sel$country[jj]) %>%
+        arrange(desc(year)) %>%
+        slice(1:3)
+    }
+
+  macro_final_list[[jj]] <- temp
+}
+
+macro_final <- bind_rows(macro_final_list) %>%
+  group_by(country) %>%
+  summarise_if(is.double, mean, na.rm = T) %>%
+  ungroup() %>%
+  select(-e_mipopula)
+
+# save(macro_final, file = "data/Rdata/macro_final.Rdata")
 ```

@@ -7,125 +7,358 @@ output: html_notebook
 ## Packages
 
 ```{r}
+options(scipen = 999)
 # devtools::install_github("rmcelreath/rethinking")
 # devtools::install_github("mjskay/tidybayes")
-pacman::p_load(dplyr, ggplot2, readr, haven, purrr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, tidyr, broom, rethinking, tidybayes)
+pacman::p_load(dplyr, ggplot2, readr, haven, purrr, magrittr, labelled, sjPlot, viridis, forcats, ggthemes, tidyr, broom, rethinking, tidybayes, rstanarm)
 # devtools::install_github("tidyverse/tidyr")
+#Sys.getenv("PATH")
+#install.packages("rstan", repos = "https://cloud.r-project.org/", dependencies=TRUE)
+
+
+# fx <- inline::cxxfunction( signature(x = "integer", y = "numeric" ) , '
+# 	return ScalarReal( INTEGER(x)[0] * REAL(y)[0] ) ;
+# ' )
+# fx( 2L, 5 ) # should be 10
 ```
 
 
 ## Load Data
 
 ```{r}
-options(scipen = 999)
 ess <- get(load("data/Rdata/ess_scores.Rdata")) %>%
   mutate(
-    id = 1:n(),
-    round_year = case_when(
-      round == 8 ~ "2016",
-      round == 7 ~ "2014",
-      round == 6 ~ "2012",
-      round == 5 ~ "2010",
-      round == 4 ~ "2008",
-      round == 3 ~ "2006",
-      round == 2 ~ "2004",
-      round == 1 ~ "2002",
-      TRUE ~ "") %>% 
-      as.numeric
+      id = 1:n(),
+      round_year = case_when(
+        round == 8 ~ "2016",
+        round == 7 ~ "2014",
+        round == 6 ~ "2012",
+        round == 5 ~ "2010",
+        round == 4 ~ "2008",
+        round == 3 ~ "2006",
+        round == 2 ~ "2004",
+        round == 1 ~ "2002",
+        TRUE ~ "") %>% 
+        as.numeric
     )
+
+ess$country[ess$country == "Czechia"] <- "Czech Republic"
+macro_final <- get(load("data/Rdata/macro_final.Rdata"))
 ches <- get(load("data/Rdata/ches_clust.Rdata")) %>%
   select(party_id, vote_id, cluster, lrgen)
-
-vdem <- get(load("data/Rdata/vdem.Rdata"))
-vdem$pol_kill <- NULL
-
-vdem <- vdem %>%
-  select(country, year, reason, common, counter_arg, elite_consul, engage_soc, clientelistic, welfare_working, equal_edu, equal_health) %>%
-  mutate(country = as.character(country))
-```
-
-## V-Dem 
-
-```{r}
-sel <- ess %>%
-  group_by(country, round_year) %>%
-  tally
-
-vdem_list <- list()
-for(jj in seq_along(sel$country)){
-  temp <- vdem %>%
-    filter(country == sel$country[1]) %>%
-    filter(year %in% (sel$round_year[1]-2):(sel$round_year[1]+2))
-  
-    if(nrow(temp) == 0){
-      temp <- vdem %>%
-        filter(country == sel$country[jj]) %>%
-        arrange(desc(year)) %>%
-        slice(1:3)
-    }
-
-  vdem_list[[jj]] <- temp
-}
-
-vdem_window <- bind_rows(vdem_list) %>%
-  group_by(country) %>%
-  summarise_if(is.double, mean, na.rm = T) %>%
-  ungroup()
 ```
 
 
-
-## Merge Data
+### Merge Data
 
 ```{r}
-dat <- ess %>% 
+dt_final <- ess %>% 
   left_join(ches, by = c("vote_id", "party_id")) %>%
-  left_join(vdem_window, by = c("country")) %>%
+  left_join(macro_final, by = c("country")) %>%
+  # mutate(vote_right = case_when(
+  #   cluster == "Right Populist" ~ "1",
+  #   cluster == "Establishment" ~ "0",
+  #   cluster == "Left Populist" ~ "0",
+  #   TRUE ~ ""
+  #   ) %>% as.numeric()
+  # ) %>%
   mutate(vote_right = ifelse(cluster == "Right Populist", 1, 0)) %>%
   mutate(lr_dff = abs(lrscale - lrgen))
+# 
+# dt_final %>%
+#   count(vote_right)
+# 
+# dt_final %>%
+#   count(vote_right_old)
+# 
+# table(dt_final$vote_right)
 
-glimpse(dat)
-#save(dat, file = "data/Rdata/data_final.Rdata")
+glimpse(dt_final)
+#save(dt_final, file = "data/Rdata/dt_final.Rdata")
+table(is.na(dt_final$hdi))
 ```
+
+
+Review Missing Data Structure
+
+```{r}
+dt_list <- dt_final %>%
+  split(.$country)
+
+for(jj in seq_along(dt_list)){
+  gg <- dt_list[[jj]] %>% visdat::vis_miss()
+  ggsave(gg, filename = paste("missing/", names(dt_list)[jj] , ".png"))
+}  
+```
+
+**Missingness patterns are systematic**
+
+* No voting records: Russia & Iceland & Israel
+* No Efficacy:
+    + Bulgeria
+    + Croatia
+    + Cyprus
+    + Denmark
+    + Greece
+    + Hungary
+    + Italy
+    + Portugal
+* Macro Match Error (Czechia)
 
 
 # Formula
 
+## Pooling
+
 ```{r}
-mf <- formula(
-fall ~ age + dementia + multimorb + sex + mobility
+form1 <- formula(
+  vote_right ~ pc_trust
 )
+
+form2 <- formula(
+  vote_right ~ pc_trust + pc_imm + pc_imm_econ
+)
+
+form3 <- formula(
+  vote_right ~ pc_trust + pc_imm + pc_imm_econ + have_infl + pol_conf
+)
+
+form4 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel 
+)
+
+form4_handler <- formula(
+  vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel 
+)
+
+form_glm_list <- list(form1, form2, form3, form4)
+```
+
+
+## Random Intercept
+
+```{r}
+form5 <- formula(
+  vote_right ~ trust_eu + pc_trust + (1|country)
+)
+
+form6 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + (1|country)
+)
+
+form7 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel + (1|country)
+)
+
+form8 <- formula(
+  vote_right ~ ori + hdi + ref_pop + ref_pop2 + (1|country)
+)
+
+form9 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel + ori + hdi + ref_pop + ref_pop2 + (1|country)
+)
+
+form10 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel + ori + hdi + ref_pop + ref_pop2 + (1|country)
+)
+
+dt_final$trust_parl
 ```
 
 
 
-# German Subset 
+# Fitting
 
-## glm
+## glm German Subset 
 
 ```{r}
 library(tidyverse)
+options(scipen = 999)
 
-dat_ger <- dat %>%
+dt_ger <- dt_final %>%
   filter(country == "Germany") %>%
   tidyr::drop_na(vote_right, pc_trust, pc_imm, pc_imm_econ, gndr)
 
-table(dat_ger$vote_right)
+table(dt_ger$vote_right)
 
-
-fit_glm1 <- dat_ger %>% 
+fit_glm1 <- dt_ger %>% 
   glm(
-    vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr,
+    form1,
     family = binomial(link = "logit"),
     data = .
   )
 
+fit_glm2 <- dt_ger %>% 
+  glm(
+    form2,
+    family = binomial(link = "logit"),
+    data = .
+  )
+
+fit_glm3 <- dt_ger %>% 
+  glm(
+    form3,
+    family = binomial(link = "logit"),
+    data = .
+  )
+
+fit_glm4 <- dt_ger %>% 
+  glm(
+    form4,
+    family = binomial(link = "logit"),
+    data = .
+  )
+
+
+texreg::screenreg(list(fit_glm1, fit_glm2, fit_glm3, fit_glm4))
+
 summary(fit_glm1)
-exp(coef(fit_glm1))
+exp(coef(fit_glm1)) %>% round(2)
+coef(fit_glm1) %>% round(2)
 ```
 
 
-### stan_glm
+## glmer
+
+```{r}
+dt_final_z <- dt_final %>%
+  mutate(ref_pop2 = ref_pop^2) %>%
+  dplyr::select(pc_trust, trust_eu, pc_imm, pc_imm_econ, income, pol_inter, lrscale, rel, ref_pop, ref_pop2, hdi, ori) %>%
+  dplyr::mutate_all(scale) %>%
+  data.frame(dt_final[,c("vote_right", "gndr", "country")], .)
+
+summary(dt_final_z)
+colnames(dt_final_z)
+
+library(arm)
+fit_glmer1 <- dt_final %>%
+  glmer(form5, data = ., family = binomial("logit"))
+arm::display(fit_glmer1)
+
+fit_glmer2 <- dt_final %>%
+  glmer(form6, data = ., family = binomial("logit"))
+arm::display(fit_glmer2)
+
+fit_glmer3 <- dt_final %>%
+  glmer(form7, data = ., family = binomial("logit"))
+arm::display(fit_glmer3)
+
+fit_glmer4 <- dt_final_z %>%
+  glmer(form8, data = ., family = binomial("logit"))
+summary(fit_glmer4)
+
+fit_glmer5 <- dt_final_z %>%
+  glmer(form9, data = ., family = binomial("logit"))
+arm::display(fit_glmer5)
+
+texreg::screenreg(list(fit_glmer1, fit_glmer2, fit_glmer3, fit_glmer4, fit_glmer5))
+
+var_list1 <- list(
+  vote_right = "Voting for Right Populist",
+  trust_eu = "Trust in EU",
+  pc_trust = "Pol. Trust (PC)",
+  pc_imm = "Cult. Immigration (PC)",
+  pc_imm_econ = "Econ. Immigration (PC)",
+  gndr = "Gender",
+  income = "Income",
+  pol_inter = "Pol. Interest",
+  lrscale = "Left-Right",
+  rel = "Religiosity",
+  ori = "ORI (Referenda)",
+  hdi = "HDI",
+  ref_pop = "% of Refugees",
+  ref_pop2 = "% of Refugees (squared)"
+)
+stargazer::stargazer(list(fit_glmer1, fit_glmer2, fit_glmer3, fit_glmer4, fit_glmer5), type = "latex", out = "glmer_table.tex", covariate.labels = map_chr(var_list1, ~ .x[1])[-1], dep.var.labels = map_chr(var_list1, ~ .x[1])[1])
+```
+
+
+```{r}
+model_list <- list(
+    #"Null Model" = fit_glmer1,
+    "Model 1" = fit_glmer2,
+    "Model 2" = fit_glmer3,
+    "Model 3" = fit_glmer4,
+    "Model 4" = fit_glmer5
+    #"Model 6" = fit_glmer6
+  ) 
+
+var_list <- list(
+  vote_right = "Voting for Right Populist",
+  trust_eu = "Trust in EU",
+  pc_trust = "Pol. Trust (PC)",
+  pc_imm_econ = "Econ. Immigration (PC)",
+  pc_imm = "Cult. Immigration (PC)",
+  gndr = "Gender",
+  income = "Income",
+  pol_inter = "Pol. Interest",
+  lrscale = "Left-Right",
+  rel = "Religiosity",
+  ori = "ORI (Referenda)",
+  hdi = "HDI",
+  ref_pop2 = "% of Refugees (squared)",
+  ref_pop = "% of Refugees"
+)
+
+
+library(latex2exp)
+
+pd <- position_dodge(width=1)
+dot_plot <- model_list %>% 
+  purrr::map(broom::tidy) %>%
+  purrr::map2(., names(model_list), ~ .x %>% mutate(model = .y)) %>% 
+  purrr::reduce(bind_rows) %>%
+  filter(!stringr::str_detect(term, "sd_|Intercept")) %>%
+  mutate(term = tidyTX::tx_map_dict(term, var_list)) %>%
+  mutate(term = factor(term, levels = rev(unique(term)))) %>%
+  mutate(
+    #estimate = exp(estimate) 
+    #std.error = exp(std.error)
+  ) %>%
+  mutate(group = ifelse(model %in% c("Model 3", "Model 4"), "Model 3 & 4", "Model 1 & 2")) %>%
+  mutate(group = factor(group, levels = c("Model 1 & 2", "Model 3 & 4"))) %>%
+  ggplot(aes(term, estimate, colour = model)) +
+  geom_point(position = pd, alpha = .5) + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  #geom_point(position = position_dodge()) +
+  geom_pointrange(aes(ymin = estimate - 1.96*std.error, ymax = estimate + 1.96*std.error), position = pd)+
+  ggplot2::coord_flip() +
+  facet_wrap(~ group, ncol = 2, scales = "free_x") +
+  #labs(title = "Logistic Regression Dot-Plot") +
+  scale_colour_gdocs(name = "") +
+  labs(x = "", y = TeX("$\\beta$ (log)"))
+
+ggsave(dot_plot, filename = "dotplot.png", width = 7, height = 6)
+```
+
+```{r}
+compare_plot <- model_list %>% 
+  purrr::map(broom::glance) %>%
+  purrr::map2(., names(model_list), ~ .x %>% mutate(model = .y)) %>% 
+  purrr::reduce(bind_rows) %>%
+  dplyr::select(model, AIC, BIC) %>%
+  mutate(model = factor(model, levels = unique(model))) %>%
+  gather("Metric", "value", -model) %>%
+  ggplot2::ggplot(ggplot2::aes(model, value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(), alpha = .7) + 
+  scale_fill_grey(start = .3, end = .8) +
+  labs(x = "", y = "")
+
+compare_plot
+```
+
+
+```{r}
+lma <- matrix(c(1, 1, 1, 2), ncol = 1)
+library(gridExtra)
+gggrid <- grid.arrange(dot_plot, compare_plot, layout_matrix = lma)
+ggsave(gggrid, filename = "gggrid.png", width = 7, height = 7)
+```
+
+
+
+
+## stan_glm
 
 ```{r}
 library(rstanarm)
@@ -133,8 +366,8 @@ library(rstanarm)
 # options(mc.cores = min(2, parallel::detectCores()))
 
 fit_bglm1 <- stan_glm(
-  vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr,
-  data = dat_ger, 
+  form3,
+  data = dt_ger, 
   seed = 2018, 
   chains = 4, 
   iter = 1000,
@@ -142,6 +375,8 @@ fit_bglm1 <- stan_glm(
   #prior = t_prior, prior_intercept = t_prior,
   seed = 1
 )
+
+
 
 broom::tidy(fit_bglm1)
 #plot(fit_bglm1)$data
@@ -151,6 +386,7 @@ exp(coef(fit_bglm1))
 ```
 
 stan_glm returns the posterior distribution for the parameters describing the uncertainty related to unknown parameter values:
+
 
 ```{r}
 library(ggplot2)
@@ -226,22 +462,73 @@ confusionMatrix(pred, dat_ger$vote_right)
 ## stan_glmer
 
 ```{r}
-table(dat_ger$country)
+library(rstanarm)
+set.seed(2018)
 
-dat_multi <- dat %>%
-  filter(country %in% c("Germany", "France", "Turkey", "Poland")) %>%
-  tidyr::drop_na(vote_right, pc_trust, pc_imm, pc_imm_econ, gndr)
+rstan_options(auto_write=TRUE)
+options(mc.cores=parallel::detectCores()) # Run on multiple cores
 
+first <- brms::brm(form5, data = dt_final, family = "bernoulli", chain = 2, iter = 500)
 
-fit_bglmer1 <- stan_glmer(
-  vote_right ~ pc_trust + pc_imm + pc_imm_econ + gndr + (1|country),
-  data = dat_multi, 
-  seed = 2018, # for internal reproducability
+fit_bglmer1 <- rstanarm::stan_glmer(
+  form5,
+  data = dt_final, 
   chains = 2, # how many sample processess? 2-4
   iter = 500, # how many draws from the posterior? 500-2000
   family = binomial(link = "logit")
   #prior = t_prior, prior_intercept = t_prior
 )
+
+fit_bglmer2 <- stan_glmer(
+  form6,
+  data = dt_final, 
+  chains = 2, # how many sample processess? 2-4
+  iter = 1000, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+fit_bglmer3 <- stan_glmer(
+  form7,
+  data = dt_final, 
+  seed = 2018, # for internal reproducability
+  chains = 2, # how many sample processess? 2-4
+  iter = 1000, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+fit_bglmer4 <- stan_glmer(
+  form8,
+  data = dt_final, 
+  seed = 2018, # for internal reproducability
+  chains = 2, # how many sample processess? 2-4
+  iter = 1000, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+fit_bglmer5 <- stan_glmer(
+  form9,
+  data = dt_final, 
+  seed = 2018, # for internal reproducability
+  chains = 2, # how many sample processess? 2-4
+  iter = 1000, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+fit_bglmer6 <- stan_glmer(
+  form10,
+  data = dt_final, 
+  seed = 2018, # for internal reproducability
+  chains = 2, # how many sample processess? 2-4
+  iter = 1000, # how many draws from the posterior? 500-2000
+  family = binomial(link = "logit")
+  #prior = t_prior, prior_intercept = t_prior
+)
+
+
 
 broom::tidy(fit_bglmer1)
 plot(fit_bglmer1)
@@ -261,7 +548,7 @@ How to go further?
 * own modelling
 
 
- extract the posterior sample
+extract the posterior sample
 
 ```{r}
 post <- as.data.frame(fit_bglmer1)
@@ -445,6 +732,283 @@ st_glmer_1 <- stan_glmer(
 
 
 
+## purrr glm per country
+
+```{r}
+dt_nest <- dt_final %>%
+  #filter(country %in% c("Germany", "France", "Belgium")) %>%
+  drop_na(vote_right, pc_trust) %>% # enferene Zeilen die NA an bei diesen Vars haben. 
+  group_by(country, round, round_year) %>% # gruppiere den Datensatz pro Jahr (oder Land oder sonstigem Kontext).
+  tidyr::nest() %>% # unspeichere ihn selbst in eine Zelle
+  arrange(country) # dann ordne nach Jahr.
+
+dt_nest$data[[1]]
+```
+
+* http://www.machinegurning.com/rstats/iterating/
+
+```{r}
+form4 <- formula(
+  vote_right ~ trust_eu + pc_trust + pc_imm + pc_imm_econ + gndr + income + pol_inter + lrscale + rel 
+)
+fit_glm <- function(df){
+  glm(form4, data = df, family = binomial(link = "logit"))
+}
+
+fit_glm_handler <- function(df){
+  tryCatch({ 
+    glm(form4, data = df, family = binomial(link = "logit"))
+  }, error = function(e){
+    glm(form4_handler, data = df, family = binomial(link = "logit"))
+  })
+  
+}
+
+fit_bglm <- function(df){
+  rstanarm::stan_glm(
+    form1,
+    data = df, 
+    seed = 2018, 
+    chains = 2, 
+    iter = 1000,
+    family = binomial(link = "logit"), 
+    #prior = t_prior, prior_intercept = t_prior,
+    seed = 1
+  )
+}
+
+dt_nest$country
+class(dt_nest$data)
+
+library(purrr)
+models <- dt_nest %>%
+  mutate(models = data %>% purrr::map(safely(fit_glm))) %>%
+  mutate(models = models %>% purrr::map("result"))
+
+  models$models[[1]]
+
+library(modelr)
+output <- models %>% 
+  dplyr::mutate(
+    tidy = models %>% purrr::map(broom::tidy),
+    glance = models %>% purrr::map(broom::glance),
+    n = data %>% purrr::map_int(nrow),
+    bic = glance %>% purrr::map_dbl("BIC"),
+    aic = glance %>% purrr::map_dbl("AIC")
+  )
+
+output$glance[[1]]
+
+output %>%
+  dplyr::select(country, n, bic, aic, tidy) %>%
+  tidyr::unnest() %>%
+  filter(term == "pc_trust") %>%
+  ggplot(aes(estimate)) +
+  geom_histogram()
+
+
+
+library(ggrepel)
+nn <- output %>%
+  dplyr::select(country, n, tidy) %>%
+  tidyr::unnest() %>%
+  filter(term == "pc_trust") %>%
+  ggplot(aes(factor(1), estimate, label = country)) +
+  geom_violin(draw_quantiles = T) +
+  ggrepel::geom_text_repel(
+    size = 4,
+    family = 'Times',
+    fontface = 'bold',
+    # Add extra padding around each text label.
+    box.padding = 0.5,
+    # Add extra padding around each data point.
+    point.padding = 1.6,
+    # Color of the line segments.
+    segment.color = '#cccccc',
+    # Width of the line segments.
+    segment.size = 0.5,
+    # Draw an arrow from the label to the data point.
+    arrow = arrow(length = unit(0.01, 'npc')),
+    # Strength of the repulsion force.
+    force = 1,
+    # Maximum iterations of the naive repulsion algorithm O(n^2).
+    max.iter = 3e3
+  ) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(data = mean_beta, aes(yintercept = estimate), color = "red") 
+```
+
+
+Model performance by country?
+
+
+```{r, fig.height=15, fig.width = 10}
+ranef(fit_glmer3)
+mean_beta <- tidy(fit_glmer3) %>% filter(!(term == "(Intercept)")) %>%
+  filter(!(term == "sd_(Intercept).country")) %>%
+  mutate(term = tidyTX::tx_map_dict(term, var_list))
+
+ggmicro <- output %>%
+  dplyr::select(country, n, tidy) %>%
+  tidyr::unnest() %>%
+  filter(!(term == "(Intercept)")) %>%
+  filter(!(term == "gndr" & country == "Croatia")) %>%
+  mutate(term = tidyTX::tx_map_dict(term, var_list)) %>%
+  filter(!(country == "Croatia" & term == "gndr"))%>%
+  mutate(term = factor(term, levels = map_chr(var_list, ~ .x[1]))) %>%
+  ggplot(aes(factor(1), estimate, label = country)) +
+  coord_flip() + 
+  geom_violin(alpha = .5) + 
+  ggrepel::geom_text_repel(
+    #size = 1,
+    #family = 'Times',
+    #fontface = 'bold',
+    # Add extra padding around each text label.
+    box.padding = 0.5,
+    # Add extra padding around each data point.
+    point.padding = .5,
+    # Color of the line segments.
+    segment.color = '#cccccc',
+    # Width of the line segments.
+    segment.size = 0.5,
+    # Draw an arrow from the label to the data point.
+    arrow = arrow(length = unit(0.01, 'npc')),
+    # Strength of the repulsion force.
+    force = 1,
+    # Maximum iterations of the naive repulsion algorithm O(n^2).
+    max.iter = 3e3
+  ) +
+  geom_point(size = 2, alpha = .7) +
+  facet_wrap(~ term, ncol = 2, scales = "free_x") +
+  theme_minimal() +
+  geom_hline(data = mean_beta, aes(yintercept = estimate), color = "red") +
+  labs(x = "", y = TeX("$\\beta$ (log)")) + 
+  theme(strip.text = element_text(size = 15, face = "bold"))
+
+
+ggsave(ggmicro, filename = "ggmicro.png", height = 11, width = 10)
+```
+
+
+```{r}
+library(ggplot2)
+# sjPlot::plot_model(fit_glmer3, type = "re")$data %>%
+#   ggplot(aes(term, estimate)) +
+#   geom_point() +
+#   coord_flip()
+
+ranef(fit_glmer3)$country %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "country") %>%
+  mutate(country = fct_reorder(country, `(Intercept)`)) %>%
+  ggplot(aes(country, `(Intercept)`)) +
+  geom_point() +
+  coord_flip()
+
+ranef(fit_glmer3)$country %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "country") %>%
+  ggplot(aes(`(Intercept)`)) +
+  geom_histogram()
+
+dat1 <- output %>%
+  dplyr::select(country, n, tidy) %>%
+  tidyr::unnest() %>%
+  filter(term == "(Intercept)") %>%
+  dplyr::select(country, estimate)  %>%
+  mutate(type = "FE") 
+
+dat2 <- ranef(fit_glmer5)$country %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "country") %>%
+  rename(estimate = `(Intercept)`) %>%
+  mutate(type = "RE") 
+
+dat3 <- bind_rows(dat1, dat2)  
+
+dat3 %>%
+  mutate(country = fct_reorder(country, estimate)) %>%
+  ggplot(aes(country, estimate, colour = type, group = country)) +
+  geom_point() +
+  geom_line(alpha = .3) + 
+  coord_flip()
+```
+
+
+
+
+```{r}
+glimpse(models)
+glimpse(mod)
+mod$glance_glm[[1]]
+
+mod$tidy %>% map(print)
+
+mod %>%
+  ggplot(aes(n_glm, bic_glm)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+mod %>%
+  ggplot(aes(bic_glm)) +
+  geom_histogram()
+
+
+reg=function(x,y,w=rep(1,length(x))){
+  result=lm(y~x,weights=w)
+  return(result)
+}
+myRegs=map2(myX,myY,safely(reg))
+map2(myX,myY,safely(reg))
+
+# Create a helper function that returns TRUE if a number is even
+is_even <- function(x){
+  !as.logical(x %% 2)
+}
+map_if(numbers, is_even, sqrt)
+
+# trans list
+transpose(safe_result_list)
+listviewer::jsonedit(length_data)
+
+### goes over errors and does not stop execution
+possible_sqrt <- possibly(sqrt, otherwise = NA_real_)
+numbers_with_error <- list(1, 2, 3, "spam", 4)
+map(numbers_with_error, possible_sqrt)
+
+### capture error in callback
+safe_sqrt <- safely(sqrt, otherwise = NA_real_)
+map(numbers_with_error, safe_sqrt)
+
+
+# Function to select columns in the raw data
+filterColumns <- function(x,y){
+    x[,(colnames(x) %in% eval(parse(text=y)))]
+}
+
+# Create X and Y columns
+starter_df %<>% 
+  transmute(
+  id,
+  pred_varsets,
+  train.X = map2(rawdata, pred_varsets,  ~ filterColumns(.x, .y)),
+  train.Y = map(rawdata, ~ .x$medv)
+  )
+
+m1 <- 'lifeexp ~ pop + gdppercap'
+m2 <- 'lifeexp ~ pop + gdppercap + continent + year'
+m3 <- 'lifeexp ~ pop + gdppercap + country + year'
+m4 <- 'lifeexp ~ pop + gdppercap + year*country'
+
+model_frame <- data_frame(model = c(m1, m2, m3,m4)) %>%
+mutate(model = map(model, as.formula))
+
+model_frame <- data_frame(model_name = c("simple", "medium", "more", "woah"), model = 
+                            
+list("simple" = m1, "medium" = m2, "more" = m3, "woah" = m4)) %>%
+  mutate(model = map(model, as.formula))
+```
 
 
 

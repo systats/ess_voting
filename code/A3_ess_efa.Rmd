@@ -74,17 +74,7 @@ fit_pca1 <- trust_data %>%
 ```
 
 ```{r}
-#sjt.pca(fit_pca1, nmbr.fctr = 1)
 pca1_vis <- fviz_pca_var(fit_pca1, col.var = "black")
-
-ess_pca1 <- ess %>%
-  select(id, country) %>%
-  dplyr::left_join(
-    trust_data_id %>% 
-      mutate(pc_trust = fit_pca1$x[,1]) %>%
-      select(id, pc_trust)
-  )
-
 #ggsave(pca1_vis, filename = "images/pca1_vis.pdf")
 ```
 
@@ -141,7 +131,7 @@ pm2 <- ggpairs(
   )
 ) 
 imm_cor <- pm2 + theme_few()
-#ggsave(imm_cor, filename = "images/imm_cor.png", height = 5, width = 7)
+#ggsave(imm_cor, filename = "images/imm_cor.png", height = 4, width = 6)
 ```
 
 ### PCA 
@@ -156,21 +146,6 @@ fit_pca2 <- imm_data %>%
 #sjt.pca(fit_pca2, nmbr.fctr = 1)
 pca2_vis <- fviz_pca_var(fit_pca2, col.var = "black")
 #ggsave(pca2_vis, filename = "images/pca2_vis.pdf")
-
-ess_pca2 <- ess %>%
-  select(id, country) %>%
-  dplyr::left_join(
-    imm_data_id %>% 
-      mutate(pc_imm = fit_pca2$x[,1],
-             pc_imm_econ = fit_pca2$x[,2]) %>%
-      select(id, pc_imm, pc_imm_econ)
-  )
-
-ess_scores <- ess %>% 
-  left_join(ess_pca1) %>%
-  left_join(ess_pca2)
-
-#save(ess_scores, file = "data/Rdata/ess_scores.Rdata")
 ```
 
 
@@ -185,36 +160,89 @@ imm_eval <- grid.arrange(imm_scree, imm_contr, ncol = 2)
 ```
 
 
+## Satisfaction
 
+```{r}
+glimpse(ess)
+sat_data_id <- ess %>%
+  rename(state_health = sate_health) %>%
+  select(id, starts_with("s_"), starts_with("state_")) %>%
+  na.omit()
 
-
-
-
-
-
+sat_data_with <- sat_data_id %>% select(-id)
+sat_data_without <- sat_data_id %>% select(-id, -s_life)
+```
 
 
 ```{r}
+library(GGally)
 
-# Color by cos2 values: quality on the factor map
-fviz_pca_var(
-  fit_pca1, 
-  col.var = "cos2",
-  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
-  repel = TRUE # Avoid text overlapping
-)
-# Graph of individuals
-# fviz_pca_ind(fit_pca1)
+element_scatter <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_jitter(alpha = .01, color = "#3D3D3D", size = .5) + 
+    geom_smooth(mapping = mapping, method = "lm")
+}
 
-# Total cos2 of variables on Dim.1 and Dim.2
-fviz_cos2(fit_pca1, choice = "var", axes = 1:2)
+element_hist <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_bar(fill = "#3D3D3D", width = 1)
+}
 
+pm3 <- ggpairs(
+  sat_data_with, 
+  #columns = c("total_bill", "time", "tip"),
+  diag = list(continuous = wrap(element_hist)),
+  lower = list(
+    #combo = wrap("facethist", binwidth = 1),
+    continuous = wrap(element_scatter)
+  )
+) + theme_few()
+
+#ggsave(pm3, filename = "images/sat_cor.png", height = 5, width = 7)
+```
+
+### PCA
+
+```{r}
+fit_pca3 <- sat_data_without %>%
+  scale() %>%
+  prcomp()
+```
+
+```{r}
+q1 <- sat_data_with %>%
+  scale() %>%
+  prcomp() %>%
+  fviz_pca_var(., col.var = "black")
+#sjt.pca(fit_pca2, nmbr.fctr = 1)
+q2 <- fviz_pca_var(fit_pca3, col.var = "black")
+library(gridExtra)
+pca_sat_refit <- grid.arrange(q1, q2, ncol = 2)
+#ggsave(pca_sat_refit, filename = "images/pca3_vis.pdf")
+```
+
+```{r}
 # Contributions of variables to PC1
-fviz_contrib(fit_pca1, choice = "var", axes = 1, top = 10)
-# Contributions of variables to PC2
-#fviz_contrib(fit_pca1, choice = "var", axes = 2, top = 10)
-# The total contribution to PC1 and PC2 is obtained with
-#fviz_contrib(fit_pca1, choice = "var", axes = 1:3, top = 10)
+sat_contr <- fviz_contrib(fit_pca3, choice = "var", axes = 1, top = 10, fill = "grey", color = NA)
+### Screeplot: Eigenvalues
+sat_scree <- fviz_eig(fit_pca3, addlabels = T,barfill = "grey", barcolor = NA)
+library(gridExtra)
+sat_eval <- grid.arrange(sat_scree, sat_contr, ncol = 2)
+#ggsave(sat_eval, filename = "images/sat_eval.pdf", width = 10, height = 5)
+```
+
+
+# Merge PCs
+
+```{r}
+ess_scores <- ess %>% 
+  left_join(tibble(id = sat_data_id$id, pc_sat = fit_pca3$x[,1])) %>%
+  left_join(tibble(id = imm_data_id$id, pc_imm = fit_pca2$x[,1], pc_imm_econ = fit_pca2$x[,2])) %>%
+  left_join(tibble(id = trust_data_id$id, pc_trust = fit_pca1$x[,1]))
+  
+#save(ess_scores, file = "data/Rdata/ess_scores.Rdata")
+
+glimpse(ess_scores)
 ```
 
 
@@ -319,4 +347,31 @@ ess_surv$year <- 2017 - ess_surv$year
 sf.ess <- survival::survfit(Surv(year, gndr) ~ 1, data = ess_surv)
 ggsurv(sf.ess)
 ```
+
+
+
+
+```{r}
+
+# Color by cos2 values: quality on the factor map
+fviz_pca_var(
+  fit_pca1, 
+  col.var = "cos2",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+  repel = TRUE # Avoid text overlapping
+)
+# Graph of individuals
+# fviz_pca_ind(fit_pca1)
+
+# Total cos2 of variables on Dim.1 and Dim.2
+fviz_cos2(fit_pca1, choice = "var", axes = 1:2)
+
+# Contributions of variables to PC1
+fviz_contrib(fit_pca1, choice = "var", axes = 1, top = 10)
+# Contributions of variables to PC2
+#fviz_contrib(fit_pca1, choice = "var", axes = 2, top = 10)
+# The total contribution to PC1 and PC2 is obtained with
+#fviz_contrib(fit_pca1, choice = "var", axes = 1:3, top = 10)
+```
+
 
