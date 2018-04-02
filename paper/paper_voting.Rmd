@@ -8,8 +8,7 @@ output:
     includes:
      in_header: imports/header.tex
      before_body: imports/title_page.tex
-     #after_body: appendix.tex
-#documentclass: article
+     after_body: appendix.tex
 bibliography: [efficacy.bib, methods.bib]
 csl: imports/university-of-stuttgart-sowi-standards.csl
 link-citations: yes
@@ -36,6 +35,7 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
 ```{r child = '1_intro.Rmd'}
 ```
+
 \newpage
 
 # State of Research
@@ -47,6 +47,8 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
 ```{r child = '3_theory.Rmd'}
 ```
+
+\clearpage
 
 # Methods
 

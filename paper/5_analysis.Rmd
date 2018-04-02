@@ -2,33 +2,36 @@
 output: pdf_document
 ---
 
-We present the empricial findings of our regression analysis in figure \ref{reg}. Models 1 & 2 report the findings on individual level, starting with the most relevant variables to this analysis. Model 2 presents the findings concerning macro predictiors only and Model 3 simultaneously includes all discussed explanatory variables. This sequential or cummulative regression approach allows to assess the stability of each parameter under increasing model complexity^[We decided to avoid p-values but instead focussing on confidence intervals and more informative methods which is in accordance to the ASA].
-
-The multilevel analysis indicates (Model 1) that people with higher trust in state institutions indeed are more likely to vote for a right populist party^[As `pc_trust` is mapped to a standradised vector space the parameters can only be interpreted in terms of stardard deviations. This is the case for every extracted principal component]. This positive effect seems to be counter-intutitive but to be affiliated with a democratic party requires trust in the political process and that change can be enacted. This effect gets only stronger by adding individual control variables. 
-
-
-... pc_imm & _econ
-
+The results of our regression analyses are captured as coefficient plot in figure \ref{reg}^[We used the `lme4` package [@lme4] to estimate random effect models.]. Starting with the most relevant variables, Models 1 & 2 report the findings on individual-level characteristics. The third model in turn presents the sole impact of macro predictors and model 4 simultaneously includes all theoretically discussed explanatory variables. This sequential or cumulative regression approach allows to assess the stability of each parameter under increasing model complexity ^[We decided to abandon p-values but instead only focusing on the direction and the dispersion of an estimated parameter [ASA 2016](https://amstat.tandfonline.com/doi/full/10.1080/00031305.2016.1154108?scroll=top&needAccess=true)].
 
 \begin{figure}[ht!]
 \centering
-\includegraphics[width=0.9\linewidth]{images/gggrid.png} 
+\includegraphics[width=0.9\linewidth]{images/gggrid.png}
 \caption{Log Odds Forest Plot}
 \label{reg}
 \end{figure}
 
-With regard to the control variables, the empirical analysis shows that women are overall less likely to vote for right populist as well as increasing income reduces the likelihood too. Likewise trust, political interest seems to be slightly increased for right-wing voters... As expected is the left right self-evaluation strongly related to one's voting preferences. Finally religiosity slightly increases the favourability for right populists. 
+Our first multi-level model indicates that people with higher trust in EU institutions are less likely to vote for a right-wing party. This negative effect is consistent and gets even stronger by adding individual control variables. In contrast, trust in national political institutions decays with increasing model complexity^[As Pol. Trust (PC) is mapped to a standardized vector space the parameters can only be interpreted in terms of standard deviations. This is the case for every extracted principal component]. Based on these results, we can summarize that the general idea of voters' distrust in politcal institutions impacts their decision to vote for right-wing parties. As we find an even more negative effect when modelling anti-EU attitudes seperate from national distrust, we highly recommend future studies to also make this theoretical distinction.
 
-In the next step we included context level predictors. In order to avoid convergence problems we standardized each continuous variable. Model 3 includes context predictors only which are very stable in comparison to the full model 4. The tendency for the obligatory referendum index and engaged society is slightly negative but inconsistent. In contrast the percent of refugee population living in a country dramatically increase the likelihood for its people to vote for right populist. Additionally we modeled a second order polynom of ref_pop in order to allow more flexibility of the model. As the negative sign of `ref_pop2` indicates a concave (inverted U-shape) we conclude that societies with very low and very high percentage of refugees are less likely to support right wing populists. 
+Moreover, we find evidence for the theoretical assumptions concerning individual anti-immigration attitudes and the competition for scarce ressources. The two dimensions are independent (uncorrelated) by definition and thus capture a completely different share of variation in data. Both effects are stable and equally strong and are therefore evidently associated with higher likelihoods for right-wing voting. 
+Citizens who perceive cultural ethnic threats and economic deprivation are more likely to vote for right-wing parties.
 
-Evaluating the overall model performance is always problematic as through list-wise deletion of missing values the sample size for each model varies which could mislead an interpretation. Interestingly, the macro predictors do not account for much variability between countries in terms of voting right populist. In fact model 2 presents the most useful set of features and is parsenmonious. In order to better understand the multilevel parameters we applied model 2 to each country dataset seperatly. 
+With regard to the control variables, the empirical analysis shows that women are overall less likely to vote right-wing. Furthermore, we find a negative effect for income: the higher a voter's income, the less likely she or he will vote for a right-wing party. As expected, voters' left-right self-assessment strongly relates to one's own voting preferences. Finally, religiosity slightly increases the favorability of right populists. This result however differs from former research. Most studies characterize the ordinary right-wing voter to be young, poorly educated and non-religious. 
 
-The parameters of 25 simple logistic regressions are mapped inorder to identifiy country-specific effects and defiencies. 
+In the next step we included context level predictors. In order to avoid convergence problems, each continuous variable was standardized. Model 3 solely includes context predictors which are highly stable in comparison to the results of the fourth model. 
+For the analysis of the impact of greater amounts of direct democratic institutions, we observed each country's obligatory referendum index. Results show that its tendency is slightly negative but inconsistent. We come to the conclusion that citizens from countries with greater amounts of direct democratic institutions should perceive less political distance than others and should therefore be less likely to vote for a right-wing party.
+
+In contrast, however, the rise in a country's refugee population dramatically increases the likelihood for its people to vote for right populists. Countries with high refugee population experience more right-wing success as voters are more likey to develop competitive perceptions. Additionally we modeled a second order polynom of ref_pop in order to allow more flexibility of the model. The negative sign of `ref_pop2` indicates a concave (inverted U-shape) with small probabilities for very low and very high percentage of refugees living in a country.
+
+Evaluating the overall model performance always represents a challenge. By the means of list-wise deletion of missing values, each model's sample size varies. Interestingly, the macro predictors do not account for much variability between countries in regard to voting right populist - ICC. In order to receive a more comprehensible insight into the multilevel parameters we additionally apply the second model to each country dataset separately. 
+
+The final step of our analysis is to map parameters of 25 separately estimated simple logistic regressions in order to detect country-specific tendencies and model deficiencies. Each facet shows a different variable and the red lines correspond to the multilevel estimates. The distribution of parameters around the point estimate reveals outliers and unique effects. If a country does not appear in the plots it might be due to high item non-response or, more generally, missing values.
+
+We observe for well-developed countries such as Norway, Denmark and Sweden, an increased association between *Cult./Econ. Immigration* attitudes and voting for a right-right parties. These effects are strictly positive for almost every country in the sample. The shape of the distribution of *Gender* parameters show a high accumulation around 0, but with a heavy tail in the negative space due to outliers like Bulgaria or Sweden. This effect illustrates the pooling function of the fixed effect that moves the red line to the left. Finally we see for *Religiosity* that almost every post-communist state has a negative sign which indicates that Eastern European countries and especially the right-wing parties are generally less religious.
 
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=\linewidth]{images/ggmicro.png} 
 \caption{Odds Ratio Dot Plot by Country and Parameter}
 \end{figure}
-
 
