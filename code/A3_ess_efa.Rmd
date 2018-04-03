@@ -30,6 +30,7 @@ First we explore the diemnionality of the given trust items by applying standard
 ```{r}
 trust_data_id <- ess %>%
   select(id, contains("trust")) %>%
+  select(-trust_eu) %>%
   na.omit() 
 
 trust_data <- trust_data_id %>% select(-id)
@@ -75,7 +76,7 @@ fit_pca1 <- trust_data %>%
 
 ```{r}
 pca1_vis <- fviz_pca_var(fit_pca1, col.var = "black")
-#ggsave(pca1_vis, filename = "images/pca1_vis.pdf")
+ggsave(pca1_vis, filename = "images/pca1_vis.pdf")
 ```
 
 

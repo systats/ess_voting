@@ -18,17 +18,17 @@ ches_clust <- get(load("data/ches_clust.Rdata"))
 
 
 
-The following section lays the groundwork for testing our set of hypotheses. We start with a detailed description of the datasets, followed by Model based clustering to infer the dependent variable labels, dimensionality reduction (PCA) and finally the statistical models deployed. 
+The following section lays the groundwork for testing our set of hypotheses. We start with a detailed description of the datasets, followed by model based clustering to infer the dependent variable labels, dimensionality reduction (PCA) and finally the statistical models.  
 
 ## Data and Variables
 
 We collected data from different sources and abstraction levels. The datasets involved are briefly introduced below:
 
 
-* **European Social Survey** [@ess2016]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists from several European countries. It aims to understand the changing attitudes and values in Europe and how institutions are changing. It comprises a wide range of European social indicators[@ess08]. We retrieved the latest data available for each country and year. This micro dataset is of core interest to which all following datasets are merged. We chose the following variables:
-* **Chapel Hill Expert Survey** [@ches2014]: Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. This data set is used for clustering parties according to their similarity on populist indicators.
-* **Varieties of Democracy** [@vdem2017]: V-DEM aims to produce indicators of Democracy that are multi-dimensional and disaggregated. This modern framework reflects the complexity of the concept of democracy and captures seven high-level principles of democracy: electoral, liberal, participatory, deliberative, egalitarian, majoritarian and consensual.
-* **Human Development Index** [@HDI]: Brought by the UN Human Development Programm, HDI emphasizes people's capabilities as ultimate criteria for assessing the development of a country, not economic growth alone. This variable approximates modernization on a macro level.
+* **European Social Survey** [@ess2016]. The ESS is a multi-country scientific survey conducted every two years since 2002 by scientists from several European countries. It aims to understand changing attitudes and values in Europe and illustrates how political institutions are transforming. It comprises a wide range of European social indicators [@ess08]. We retrieved the latest data available for each country and year. This micro dataset is of core interest to which all following datasets are merged.
+* **Chapel Hill Expert Survey** [@ches2014]: Since 1999 CHES provides party positioning scores on European integration, ideology and policy issues for national parties in a variety of European countries. This dataset is used for clustering parties according to their similarity on populist indicators.
+* **Varieties of Democracy** [@vdem2017]: V-DEM aims to produce indicators of Democracy that are multi-dimensional and disaggregated. This modern framework reflects the complexity of the concept of democracy and cap- tures seven high-level principles: electoral, liberal, participatory, deliberative, egalitarian, majoritarian and consensual.
+* **Human Development Index** [@HDI]: Provided by the UN Human Development Programm, HDI emphasizes people's capabilities as ultimate criteria for assessing the development of a country, not economic growth alone. This variable approximates modernization on a macro level.
 * **World Bank Development Indicators** [@WDI]: An international effort to measure state performance and to reduce poverty through informative data analysis.
 
 
@@ -79,9 +79,9 @@ vars %>%
 
 ## Model Based Clustering
 
-Voting for a right-wing party is often approximated by left-right scales or is time-intensively coded. Instead we employ model based clustering to estimate a party's label from its multi-dimensional positioning according to the CHES party indicators. We adopt Cas Mudde’s clear minimalist definition of populism to identify those core features which are shared by all sub-types of populism [@mudde2007populist]. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes, left-right positioning as well as their opposition to modernization. 
+Voting for a right-wing party is often approximated by left-right scales or is time-intensively coded. Instead we employ model based clustering to estimate a party's label from its multi-dimensional positioning according to the CHES party indicators. We adopt Cas Mudde’s clear minimalist definition of populism to identify those core features which are shared by all sub-types of populism [@mudde2007populist]. In line with this definition, we suggest that populist parties are primarily shaped by their degree of anti-establishment attitudes, left-right positioning as well as their opposition to modernization and civil liberties. 
 
-This multi-dimensional classification problem is best approached by model-based hierarchical clustering [@mclust]. This tool set has reached political sciences and ever since has been praised for estimating meaningful clusters on high-dimensional data [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes that the data generating process is driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub-population is separately estimated and summarized by a mixture of these sub-populations. Therefore the density tends to be centered at the multidimensional centroids ($\mu_k$). They increase through geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell, the Gaussian Finite Normal Mixture model assumes a d-dimensional data set $y_1, \dots , y_n$ to calculate G components with the likelihood
+This multi-dimensional classification problem is best approached by model-based hierarchical clustering [@mclust]. This tool set has reached political sciences and ever since has been praised for estimating meaningful clusters on high-dimensional data [@mclust_pol1; @mclust_pol2]. Model-based clustering assumes that the data generating process is driven by a mixture of underlying probability distributions in which each component represents a different cluster. Consequently each sub-population is separately estimated and summarized by a mixture of these sub-populations. Therefore the density tends to be centered at the multidimensional centroids ($\mu_k$). They increase through geometric features (shape, volume, orientation) of the clusters being determined by the parameters of the covariance matrices $\Sigma_k$, which may also induce cross-cluster conditions [@mclust_pol1]. In a nutshell, the Gaussian Finite Normal Mixture model assumes a d-dimensional dataset $y_1, \dots , y_n$ to calculate G components with the likelihood
 
 $$\ell_{MIX} (\theta_1, \dots, \theta_G|y) = \prod^n_{i=1}\sum^G_{k=1} \tau_kf_k(y_i|\theta_k) $$
 
@@ -105,9 +105,11 @@ Figure 1 indicates a three-component mixture with covariances having different v
 \caption{Classification and Cluster Boundaries}
 \end{figure}
 
+\newpage 
 
-In order to check the consistency of the clusters, the variable means and standard deviations are calculated for each cluster (Table 2).  We can see that Anti-Establishment positions are shared by right and left populist parties. On the dimensions we can observe a antagonistic distinction between both. The cluster vector is finally attached to the data set. The binary dependent variable *Voting Right Populists* is obtained by one-hot-encoding of the trichotomous cluster vector. 
+In order to check the consistency of the clusters, the variable means and standard deviations are calculated for each cluster (Table 2).  We can see that Anti-Establishment positions are shared by right and left populist parties. We are able to observe a antagonistic distinction between both dimensions. The cluster vector is finally attached to the dataset. The binary dependent variable *Voting Right Populists* is obtained by one-hot-encoding of the trichotomous cluster vector. 
 
+\vspace{.5cm}
 
 ```{r}
 cluster_means <- ches_clust %>%
@@ -194,7 +196,7 @@ that has the largest variance. The first principal component loading vector, wit
 \caption{Bivariate Scatter Plots for Trust Items}
 \end{figure}
 
-First we explore the dimensionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail towards 0. People are especially critical towards political institutions, but have more overall confidence in the police. Furthermore we can see that *Trust EU* has lower correlations compared to the rest of the items. Therefore *Trust EU* is excluded from the PCA and separately included in the regressions models.  
+First we explore the dimensionality of the given trust items by applying standard pairwise scatter plots for each variable combination. The visual inspection confirms a strong linear association between all variables and the diagonal histograms approximate a normal distribution with a heavy tail towards 0. People are especially critical towards political institutions, but have more overall confidence in the police. Furthermore we can see that *Trust EU* has lower correlations compared to the rest of the items. Therefore *Trust EU* is excluded from the PCA and separately included in the regression models.  
 
 The next plot illustrates a two-dimensional representation of the data which captures most of the information in a 2D subspace. The first two components together contribute nearly 80% of the total variance. 
 
@@ -211,7 +213,7 @@ The next plot illustrates a two-dimensional representation of the data which cap
 \caption{Scree Plot and Component Contribution by Variable}
 \end{figure}
 
-As each principal component vector defines a direction in the feature space and all arrows in figure 4 point to the same direction, we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 66,7% of the total variance by the first dimension. Furthermore we can see that the trust items for political institutions do somewhat differ in their contribution to the first PC due to different reasons. The European Parliament is often seen as disconnected from people and the police is always highly appreciated by everyone which supports the notion that *Trust EU* should be considered desperately. The first PC scores are stored for later analysis as *Pol. Trust (PC)*. 
+As each principal component vector defines a direction in the feature space and all arrows in figure 4 point to the same direction, we can be confident to approximate one trust dimension. This notion is supported by the scree plot capturing 66,7% of the total variance by the first dimension. Furthermore we can see that the trust items for political institutions do somewhat differ in their contribution to the first PC due to different reasons. The European Parliament is often seen as disconnected from people and the police is always highly appreciated by everyone which supports the notion that *Trust EU* should be considered separately. The PCA scores are stored for later analysis as *Pol. Trust (PC)*. 
 
 
 ### Immigration Items
@@ -223,7 +225,7 @@ As each principal component vector defines a direction in the feature space and 
 \caption{Bivariate Scatter Plots for Immigration Items}
 \end{figure}
 
-The same procedure is applied to the ESS immigration items. But first we, again, explore the correlation of the given data by pairwise scatter plots for each variable combination in figure 6. The visual inspection confirms a strong linear association between all variables but seem to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables only have four levels. This Likert scale is assumed to be equally distant to be suitable for PCA. 
+The same procedure is applied to the ESS immigration items. But first we again explore the correlation of the given data by pairwise scatter plots for each variable combination in figure 6. The visual inspection confirms a strong linear association between all variables but seems to be more noisy than the trust items before. The diagonal histograms approximate a normal distribution, despite the fact that three out of four variables only have four levels. This Likert scale is assumed to be equally distant to be suitable for PCA. 
 
 \begin{figure}[ht!]
 \centering
@@ -243,7 +245,7 @@ The two-dimensional representation of the immigration items also proposes a stro
 
 ## Statistical Models
 
-As already explained in section 4.1 and the dependent variable $y_i$ is labeled '1' for voters of right-wing parties estimated by model based-clustering. 
+As already explained in section 4.1, the dependent variable $y_i$ is labeled “1” for voters of right-wing parties. 
 
 $$
 y_i = \left\{
@@ -253,7 +255,7 @@ y_i = \left\{
 \end{array}\right.
 $$
 
-This binary data structure is best fitted by generalized linear models (GLMs) with Binomial response function (Bernoulli). Within the scope of this paper, we built different logistic regression models with varying size amount of complexity. First, we introduce simple logistic regression. Second, we augment logistic regression with a hierarchical representation to better capture the nested data generation process of the ESS micro/country data structure [@gelman07].
+This binary data structure is best fitted by generalized linear models (GLMs) with binomial response function (Bernoulli). Within the scope of this paper, we build different logistic regression models with varying size amount of complexity. First, we introduce simple logistic regression. Second, we augment logistic regression with a hierarchical representation to better capture the nested data generation process of the ESS micro/country data structure [@gelman07].
 
 
 The first simple logistic model predicts the mean log-odds of a respondent voting right-wing through a linear combination of an intercept and a slope - the latter allowing to quantify the effect of each covariate. Finally the inverse link function ($logit^{-1}$) non-linearly transforms the outcome into new vector space $\in(0,1)$
@@ -267,7 +269,7 @@ The first simple logistic model predicts the mean log-odds of a respondent votin
 
 This complete pooling architecture is separately deployed to each country dataset and summarized accordingly to explore country-specific model characteristics as well as deficiencies. The fitting function is taken from the core R `stats` functions. 
 
-The simple version of the GLM assumes independence of each individual observation which produces in a less severe scenario downwards biased parameter standard errors (SE). By deploying random effects with context level predictors we are able to model country-specific heterogeneity and group level standard errors [@steenbergen02]. The formal multilevel logistic regression has the formula 
+The simple version of the GLM assumes independence of each individual observation which produces, in a less severe scenario, downwards biased parameter standard errors (SE). By deploying random effects with context level predictors we are able to model country-specific heterogeneity and group level standard errors [@steenbergen02]. The formal multilevel logistic regression has the formula 
 
 
 \begin{align}

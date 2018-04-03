@@ -74,4 +74,9 @@ knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
 \newpage
 
-# References {-}
+# References
+
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+\noindent
